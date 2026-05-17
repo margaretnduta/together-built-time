@@ -117,12 +117,29 @@ function TopBar({ onSignOut }: { onSignOut: () => void }) {
           </div>
           TwoGether
         </Link>
-        <button
-          onClick={onSignOut}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-        >
-          <LogOut className="h-4 w-4" /> Sign out
-        </button>
+        <nav className="flex items-center gap-1">
+          <Link
+            to="/app"
+            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
+          >
+            Today
+          </Link>
+          <Link
+            to="/goals"
+            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
+          >
+            Goals
+          </Link>
+          <button
+            onClick={onSignOut}
+            className="ml-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </nav>
       </div>
     </header>
   );

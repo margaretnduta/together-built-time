@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      couple_goals: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_complete: boolean
+          month: string
+          partnership_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_complete?: boolean
+          month: string
+          partnership_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_complete?: boolean
+          month?: string
+          partnership_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_tasks: {
         Row: {
           completed_at: string | null
