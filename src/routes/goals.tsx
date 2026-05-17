@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Heart, Check, Plus, X, Loader2, LogOut, Target, Sparkles, CalendarDays, Users, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { StreakBar } from "@/components/streak-bar";
+import { CelebrationInbox } from "@/components/celebration-inbox";
 
 export const Route = createFileRoute("/goals")({
   head: () => ({ meta: [{ title: "Goals — TwoGether" }] }),
