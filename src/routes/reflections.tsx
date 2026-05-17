@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Heart, Loader2, LogOut, Sparkles, Lock, Check, BookOpen } from "lucide-react";
+import { StreakBar } from "@/components/streak-bar";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reflections")({
@@ -110,7 +111,10 @@ function ReflectionsPage() {
             </Link>
           </div>
         ) : (
-          <ReflectionsView user={user} partnership={partnership} />
+          <>
+            <StreakBar userId={user.id} partnershipId={partnership.id} />
+            <ReflectionsView user={user} partnership={partnership} />
+          </>
         )}
       </div>
     </main>

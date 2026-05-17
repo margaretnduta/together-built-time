@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Heart, Check, Plus, X, Loader2, LogOut, Target, Sparkles, CalendarDays, Users, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { StreakBar } from "@/components/streak-bar";
+import { CelebrationInbox } from "@/components/celebration-inbox";
 
 export const Route = createFileRoute("/goals")({
   head: () => ({ meta: [{ title: "Goals — TwoGether" }] }),
@@ -166,10 +168,22 @@ type Mode = "together" | "mine";
 function GoalsView({ user, partnership }: { user: { id: string }; partnership: Partnership }) {
   const [month, setMonth] = useState(monthISO());
   const [mode, setMode] = useState<Mode>("together");
+  const [partnerName, setPartnerName] = useState("Partner");
   const isCurrent = month === monthISO();
+
+  const partnerId = partnership.partner_a_id === user.id ? partnership.partner_b_id : partnership.partner_a_id;
+
+  useEffect(() => {
+    if (!partnerId) return;
+    supabase.from("profiles").select("display_name").eq("id", partnerId).maybeSingle().then(({ data }) => {
+      if (data?.display_name) setPartnerName(data.display_name);
+    });
+  }, [partnerId]);
 
   return (
     <div>
+      <StreakBar userId={user.id} partnershipId={partnership.id} />
+      <CelebrationInbox userId={user.id} partnershipId={partnership.id} partnerName={partnerName} />
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
