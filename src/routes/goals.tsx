@@ -189,9 +189,16 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
   const completedCount = useMemo(() => goals.filter((g) => g.is_complete).length, [goals]);
   const pct = goals.length === 0 ? 0 : Math.round((completedCount / goals.length) * 100);
 
+  const GOAL_LIMIT = 3;
+  const atLimit = goals.length >= GOAL_LIMIT;
+
   async function addGoal(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    if (atLimit) {
+      toast.error(`Maximum ${GOAL_LIMIT} goals per month. Keep it focused.`);
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.from("couple_goals").insert({
       partnership_id: partnership.id,
@@ -324,36 +331,45 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
       </ul>
 
       {/* Add form */}
-      <form
-        onSubmit={addGoal}
-        className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-soft"
-      >
-        <h2 className="font-display text-lg font-semibold">Add a goal</h2>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Try a new restaurant together"
-          maxLength={200}
-          className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
-        />
-        <textarea
-          value={desc}
-          onChange={(e) => setDesc(e.target.value)}
-          placeholder="Optional details…"
-          maxLength={500}
-          rows={2}
-          className="mt-2 w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={busy || !title.trim()}
-          className="mt-3 flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
-        >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          Add goal
-        </button>
-      </form>
+      {atLimit ? (
+        <div className="mt-6 rounded-3xl border border-border bg-secondary/40 p-6 text-center shadow-soft">
+          <h2 className="font-display text-lg font-semibold">You've set {GOAL_LIMIT} goals this month.</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Focus beats volume. Complete or remove one to add another.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={addGoal} className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-soft">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-lg font-semibold">Add a goal</h2>
+            <span className="text-xs text-muted-foreground">{goals.length} of {GOAL_LIMIT} used</span>
+          </div>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Try a new restaurant together"
+            maxLength={200}
+            className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
+          />
+          <textarea
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            placeholder="Optional details…"
+            maxLength={500}
+            rows={2}
+            className="mt-2 w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={busy || !title.trim()}
+            className="mt-3 flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Add goal
+          </button>
+        </form>
+      )}
     </div>
   );
 }
