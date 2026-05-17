@@ -176,6 +176,45 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_reflections: {
+        Row: {
+          appreciation_for_partner: string | null
+          created_at: string
+          id: string
+          owner_id: string
+          partnership_id: string
+          submitted_at: string | null
+          updated_at: string
+          was_hard: string | null
+          week_start: string
+          went_well: string | null
+        }
+        Insert: {
+          appreciation_for_partner?: string | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          partnership_id: string
+          submitted_at?: string | null
+          updated_at?: string
+          was_hard?: string | null
+          week_start: string
+          went_well?: string | null
+        }
+        Update: {
+          appreciation_for_partner?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          partnership_id?: string
+          submitted_at?: string | null
+          updated_at?: string
+          was_hard?: string | null
+          week_start?: string
+          went_well?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
