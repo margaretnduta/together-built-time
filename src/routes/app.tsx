@@ -184,7 +184,6 @@ function Onboarding({
     if (!code.trim()) return;
     setBusy(true);
     try {
-      // @ts-expect-error rpc typing
       const { error } = await supabase.rpc("accept_invite", { _code: code.trim().toUpperCase() });
       if (error) throw error;
       toast.success("Partnership formed.");
