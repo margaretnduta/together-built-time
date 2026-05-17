@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Heart, Check, Circle, Plus, X, Loader2, Copy, LogOut, Unlock, Lock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { StreakBar } from "@/components/streak-bar";
 
 export const Route = createFileRoute("/app")({
   head: () => ({
