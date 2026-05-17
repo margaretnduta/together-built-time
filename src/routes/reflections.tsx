@@ -137,6 +137,7 @@ function TopBar({ onSignOut }: { onSignOut: () => void }) {
           <Link to="/app" className={linkCls} activeProps={{ className: activeCls }}>Today</Link>
           <Link to="/goals" className={linkCls} activeProps={{ className: activeCls }}>Goals</Link>
           <Link to="/reflections" className={linkCls} activeProps={{ className: activeCls }}>Reflections</Link>
+          <Link to="/dates" className={linkCls} activeProps={{ className: activeCls }}>Dates</Link>
           <button
             onClick={onSignOut}
             className="ml-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
