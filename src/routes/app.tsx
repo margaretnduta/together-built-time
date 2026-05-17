@@ -132,6 +132,13 @@ function TopBar({ onSignOut }: { onSignOut: () => void }) {
           >
             Goals
           </Link>
+          <Link
+            to="/reflections"
+            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
+          >
+            Reflections
+          </Link>
           <button
             onClick={onSignOut}
             className="ml-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
