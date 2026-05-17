@@ -189,9 +189,16 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
   const completedCount = useMemo(() => goals.filter((g) => g.is_complete).length, [goals]);
   const pct = goals.length === 0 ? 0 : Math.round((completedCount / goals.length) * 100);
 
+  const GOAL_LIMIT = 3;
+  const atLimit = goals.length >= GOAL_LIMIT;
+
   async function addGoal(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    if (atLimit) {
+      toast.error(`Maximum ${GOAL_LIMIT} goals per month. Keep it focused.`);
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.from("couple_goals").insert({
       partnership_id: partnership.id,
