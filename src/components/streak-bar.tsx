@@ -14,7 +14,7 @@ export function StreakBar({ partnershipId, userId }: Props) {
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
-    const calls: Promise<unknown>[] = [
+    const calls: PromiseLike<unknown>[] = [
       supabase.rpc("get_personal_streak").then(({ data }) => setPersonal((data as number) ?? 0)),
     ];
     if (partnershipId) {
