@@ -394,6 +394,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
 
   return (
     <div>
+      <StreakBar userId={user.id} partnershipId={partnership.id} />
       <div className="mb-8 flex items-end justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">{dateLabel}</p>
