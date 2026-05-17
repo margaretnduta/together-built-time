@@ -29,7 +29,7 @@ function Nav() {
         <a href="#principles" className="transition hover:text-foreground">Principles</a>
       </div>
       <Link
-        to="/"
+        to="/auth"
         className="rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background transition hover:opacity-90"
       >
         Get started
@@ -63,7 +63,7 @@ function Hero() {
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            to="/"
+            to="/auth"
             className="rounded-full bg-gradient-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02]"
           >
             Start your partnership
@@ -287,7 +287,7 @@ function FinalCta() {
         </p>
         <div className="mt-10">
           <Link
-            to="/"
+            to="/auth"
             className="inline-flex items-center gap-2 rounded-full bg-gradient-primary px-8 py-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02]"
           >
             Create your account <Sparkles className="h-4 w-4" />
