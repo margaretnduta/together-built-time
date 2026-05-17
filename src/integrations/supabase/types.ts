@@ -158,6 +158,45 @@ export type Database = {
           },
         ]
       }
+      personal_goals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_complete: boolean
+          month: string
+          owner_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_complete?: boolean
+          month: string
+          owner_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_complete?: boolean
+          month?: string
+          owner_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
