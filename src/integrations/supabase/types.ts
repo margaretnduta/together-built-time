@@ -14,13 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_complete: boolean
+          owner_id: string
+          partnership_id: string
+          sort_order: number
+          task_date: string
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_complete?: boolean
+          owner_id: string
+          partnership_id: string
+          sort_order?: number
+          task_date?: string
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_complete?: boolean
+          owner_id?: string
+          partnership_id?: string
+          sort_order?: number
+          task_date?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_tasks_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_tasks_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partnerships: {
+        Row: {
+          created_at: string
+          formed_at: string | null
+          id: string
+          invite_code: string | null
+          invite_expires_at: string | null
+          partner_a_id: string
+          partner_b_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          formed_at?: string | null
+          id?: string
+          invite_code?: string | null
+          invite_expires_at?: string | null
+          partner_a_id: string
+          partner_b_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          formed_at?: string | null
+          id?: string
+          invite_code?: string | null
+          invite_expires_at?: string | null
+          partner_a_id?: string
+          partner_b_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnerships_partner_a_id_fkey"
+            columns: ["partner_a_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnerships_partner_b_id_fkey"
+            columns: ["partner_b_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_invite: { Args: { _code: string }; Returns: string }
+      get_my_partnership_id: { Args: never; Returns: string }
+      is_in_partnership: { Args: { _partnership_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
