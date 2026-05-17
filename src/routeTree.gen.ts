@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ReflectionsRouteImport } from './routes/reflections'
 import { Route as GoalsRouteImport } from './routes/goals'
+import { Route as DatesRouteImport } from './routes/dates'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +24,11 @@ const ReflectionsRoute = ReflectionsRouteImport.update({
 const GoalsRoute = GoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DatesRoute = DatesRouteImport.update({
+  id: '/dates',
+  path: '/dates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
+  '/dates': typeof DatesRoute
   '/goals': typeof GoalsRoute
   '/reflections': typeof ReflectionsRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
+  '/dates': typeof DatesRoute
   '/goals': typeof GoalsRoute
   '/reflections': typeof ReflectionsRoute
 }
@@ -60,21 +68,23 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
+  '/dates': typeof DatesRoute
   '/goals': typeof GoalsRoute
   '/reflections': typeof ReflectionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/auth' | '/goals' | '/reflections'
+  fullPaths: '/' | '/app' | '/auth' | '/dates' | '/goals' | '/reflections'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app' | '/auth' | '/goals' | '/reflections'
-  id: '__root__' | '/' | '/app' | '/auth' | '/goals' | '/reflections'
+  to: '/' | '/app' | '/auth' | '/dates' | '/goals' | '/reflections'
+  id: '__root__' | '/' | '/app' | '/auth' | '/dates' | '/goals' | '/reflections'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
+  DatesRoute: typeof DatesRoute
   GoalsRoute: typeof GoalsRoute
   ReflectionsRoute: typeof ReflectionsRoute
 }
@@ -93,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/goals'
       fullPath: '/goals'
       preLoaderRoute: typeof GoalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dates': {
+      id: '/dates'
+      path: '/dates'
+      fullPath: '/dates'
+      preLoaderRoute: typeof DatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -123,9 +140,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
+  DatesRoute: DatesRoute,
   GoalsRoute: GoalsRoute,
   ReflectionsRoute: ReflectionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
