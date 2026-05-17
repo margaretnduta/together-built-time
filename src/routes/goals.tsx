@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Heart, Check, Plus, X, Loader2, LogOut, Target, Sparkles, CalendarDays } from "lucide-react";
+import { Heart, Check, Plus, X, Loader2, LogOut, Target, Sparkles, CalendarDays, Users, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/goals")({
