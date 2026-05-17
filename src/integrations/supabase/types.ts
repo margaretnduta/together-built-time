@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      celebrations: {
+        Row: {
+          acknowledged_at: string | null
+          celebrant_id: string
+          created_at: string
+          goal_count: number
+          honoree_id: string
+          id: string
+          message: string | null
+          month: string
+          partnership_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          celebrant_id: string
+          created_at?: string
+          goal_count?: number
+          honoree_id: string
+          id?: string
+          message?: string | null
+          month: string
+          partnership_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          celebrant_id?: string
+          created_at?: string
+          goal_count?: number
+          honoree_id?: string
+          id?: string
+          message?: string | null
+          month?: string
+          partnership_id?: string
+        }
+        Relationships: []
+      }
       couple_goals: {
         Row: {
           completed_at: string | null
@@ -260,7 +296,13 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { _code: string }; Returns: string }
+      get_daily_streak: { Args: { _partnership_id: string }; Returns: number }
+      get_monthly_couple_streak: {
+        Args: { _partnership_id: string }
+        Returns: number
+      }
       get_my_partnership_id: { Args: never; Returns: string }
+      get_personal_streak: { Args: never; Returns: number }
       is_in_partnership: { Args: { _partnership_id: string }; Returns: boolean }
     }
     Enums: {
