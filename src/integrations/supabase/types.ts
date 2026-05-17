@@ -146,6 +146,45 @@ export type Database = {
           },
         ]
       }
+      important_dates: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          date: string
+          id: string
+          notes: string | null
+          partnership_id: string
+          recurrence: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by: string
+          date: string
+          id?: string
+          notes?: string | null
+          partnership_id: string
+          recurrence?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          partnership_id?: string
+          recurrence?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       partnerships: {
         Row: {
           created_at: string
