@@ -150,8 +150,74 @@ function TopBar({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
+type PersonalGoal = {
+  id: string;
+  owner_id: string;
+  month: string;
+  title: string;
+  description: string | null;
+  is_complete: boolean;
+  completed_at: string | null;
+  sort_order: number;
+};
+
+type Mode = "together" | "mine";
+
 function GoalsView({ user, partnership }: { user: { id: string }; partnership: Partnership }) {
   const [month, setMonth] = useState(monthISO());
+  const [mode, setMode] = useState<Mode>("together");
+  const isCurrent = month === monthISO();
+
+  return (
+    <div>
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            {mode === "together" ? "Monthly couple goals" : "Your private goals"}
+          </p>
+          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">{monthLabel(month)}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setMonth(shiftMonth(month, -1))} className="rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:bg-secondary">← Prev</button>
+          {!isCurrent && (
+            <button onClick={() => setMonth(monthISO())} className="rounded-full bg-secondary px-3 py-1.5 text-sm transition hover:bg-accent">This month</button>
+          )}
+          <button onClick={() => setMonth(shiftMonth(month, 1))} className="rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:bg-secondary">Next →</button>
+        </div>
+      </div>
+
+      {/* Mode tabs */}
+      <div className="mb-8 inline-flex rounded-full border border-border bg-card p-1 shadow-soft">
+        <button
+          onClick={() => setMode("together")}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+            mode === "together" ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Users className="h-4 w-4" /> Together
+        </button>
+        <button
+          onClick={() => setMode("mine")}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+            mode === "mine" ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Lock className="h-4 w-4" /> Just me
+        </button>
+      </div>
+
+      {mode === "together" ? (
+        <CouplePanel user={user} partnership={partnership} month={month} />
+      ) : (
+        <PersonalPanel user={user} month={month} />
+      )}
+    </div>
+  );
+}
+
+// =================== COUPLE GOALS PANEL ===================
+
+function CouplePanel({ user, partnership, month }: { user: { id: string }; partnership: Partnership; month: string }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [title, setTitle] = useState("");
@@ -160,12 +226,9 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
 
   const load = useCallback(async () => {
     const { data } = await supabase
-      .from("couple_goals")
-      .select("*")
-      .eq("partnership_id", partnership.id)
-      .eq("month", month)
-      .order("sort_order")
-      .order("created_at");
+      .from("couple_goals").select("*")
+      .eq("partnership_id", partnership.id).eq("month", month)
+      .order("sort_order").order("created_at");
     setGoals((data as Goal[]) ?? []);
   }, [partnership.id, month]);
 
@@ -183,200 +246,266 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
 
   useEffect(() => {
     const ch = supabase
-      .channel(`goals-${partnership.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "couple_goals", filter: `partnership_id=eq.${partnership.id}` },
-        () => load()
-      )
+      .channel(`couple-goals-${partnership.id}-${month}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "couple_goals", filter: `partnership_id=eq.${partnership.id}` }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [partnership.id, load]);
+  }, [partnership.id, month, load]);
 
-  const completedCount = useMemo(() => goals.filter((g) => g.is_complete).length, [goals]);
-  const pct = goals.length === 0 ? 0 : Math.round((completedCount / goals.length) * 100);
-
-  const GOAL_LIMIT = 3;
-  const atLimit = goals.length >= GOAL_LIMIT;
+  const completed = useMemo(() => goals.filter((g) => g.is_complete).length, [goals]);
+  const pct = goals.length === 0 ? 0 : Math.round((completed / goals.length) * 100);
+  const LIMIT = 3;
+  const atLimit = goals.length >= LIMIT;
 
   async function addGoal(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return;
-    if (atLimit) {
-      toast.error(`Maximum ${GOAL_LIMIT} goals per month. Keep it focused.`);
-      return;
-    }
+    if (!title.trim() || atLimit) return;
     setBusy(true);
     const { error } = await supabase.from("couple_goals").insert({
-      partnership_id: partnership.id,
-      month,
-      title: title.trim(),
-      description: desc.trim() || null,
-      created_by: user.id,
+      partnership_id: partnership.id, month,
+      title: title.trim(), description: desc.trim() || null,
+      created_by: user.id, sort_order: goals.length,
+    } as never);
+    if (error) toast.error(error.message);
+    else { setTitle(""); setDesc(""); }
+    setBusy(false);
+  }
+  async function toggle(g: Goal) {
+    const { error } = await supabase.from("couple_goals").update({ is_complete: !g.is_complete } as never).eq("id", g.id);
+    if (error) toast.error(error.message);
+    else if (!g.is_complete) toast.success("Goal celebrated 🎉");
+  }
+  async function remove(g: Goal) { await supabase.from("couple_goals").delete().eq("id", g.id); }
+
+  return (
+    <>
+      <ProgressBanner
+        icon={<Target className="h-5 w-5 text-lavender-deep" />}
+        title={goals.length === 0 ? "What do you want to do together this month?" : `${completed} of ${goals.length} celebrated`}
+        subtitle={goals.length === 0 ? "Add your first shared goal below." : "Either of you can edit or mark complete — these belong to both of you."}
+        pct={pct}
+      />
+      <ul className="space-y-3">
+        {goals.map((g) => {
+          const creator = profiles[g.created_by]?.display_name ?? "Partner";
+          return (
+            <GoalRow
+              key={g.id}
+              title={g.title}
+              description={g.description}
+              isComplete={g.is_complete}
+              meta={
+                <>
+                  <CalendarDays className="h-3 w-3" /> Added by {creator}
+                  {g.is_complete && g.completed_at && ` · Celebrated ${new Date(g.completed_at).toLocaleDateString()}`}
+                </>
+              }
+              onToggle={() => toggle(g)}
+              onDelete={() => remove(g)}
+            />
+          );
+        })}
+      </ul>
+      <AddGoalForm
+        atLimit={atLimit} limit={LIMIT} count={goals.length}
+        title={title} setTitle={setTitle} desc={desc} setDesc={setDesc}
+        busy={busy} onSubmit={addGoal}
+        placeholder="e.g. Try a new restaurant together"
+        limitMessage="Focus beats volume. Complete or remove one to add another."
+      />
+    </>
+  );
+}
+
+// =================== PERSONAL GOALS PANEL ===================
+
+function PersonalPanel({ user, month }: { user: { id: string }; month: string }) {
+  const [goals, setGoals] = useState<PersonalGoal[]>([]);
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from("personal_goals").select("*")
+      .eq("owner_id", user.id).eq("month", month)
+      .order("sort_order").order("created_at");
+    setGoals((data as PersonalGoal[]) ?? []);
+  }, [user.id, month]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`personal-goals-${user.id}-${month}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "personal_goals", filter: `owner_id=eq.${user.id}` }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user.id, month, load]);
+
+  const completed = useMemo(() => goals.filter((g) => g.is_complete).length, [goals]);
+  const pct = goals.length === 0 ? 0 : Math.round((completed / goals.length) * 100);
+  const LIMIT = 5;
+  const atLimit = goals.length >= LIMIT;
+
+  async function addGoal(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim() || atLimit) return;
+    setBusy(true);
+    const { error } = await supabase.from("personal_goals").insert({
+      owner_id: user.id, month,
+      title: title.trim(), description: desc.trim() || null,
       sort_order: goals.length,
     } as never);
     if (error) toast.error(error.message);
     else { setTitle(""); setDesc(""); }
     setBusy(false);
   }
-
-  async function toggle(g: Goal) {
-    const { error } = await supabase
-      .from("couple_goals")
-      .update({ is_complete: !g.is_complete } as never)
-      .eq("id", g.id);
+  async function toggle(g: PersonalGoal) {
+    const { error } = await supabase.from("personal_goals").update({ is_complete: !g.is_complete } as never).eq("id", g.id);
     if (error) toast.error(error.message);
-    else if (!g.is_complete) toast.success("Goal celebrated 🎉");
   }
-
-  async function remove(g: Goal) {
-    await supabase.from("couple_goals").delete().eq("id", g.id);
-  }
-
-  const isCurrent = month === monthISO();
+  async function remove(g: PersonalGoal) { await supabase.from("personal_goals").delete().eq("id", g.id); }
 
   return (
-    <div>
-      <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Monthly couple goals</p>
-          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">{monthLabel(month)}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMonth(shiftMonth(month, -1))}
-            className="rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:bg-secondary"
-          >
-            ← Prev
-          </button>
-          {!isCurrent && (
-            <button
-              onClick={() => setMonth(monthISO())}
-              className="rounded-full bg-secondary px-3 py-1.5 text-sm transition hover:bg-accent"
-            >
-              This month
-            </button>
-          )}
-          <button
-            onClick={() => setMonth(shiftMonth(month, 1))}
-            className="rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:bg-secondary"
-          >
-            Next →
-          </button>
-        </div>
-      </div>
-
-      {/* Progress banner */}
-      <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-soft">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">
-            <Target className="h-5 w-5 text-lavender-deep" />
-          </div>
-          <div className="flex-1">
-            <p className="font-display text-xl font-semibold">
-              {goals.length === 0
-                ? "What do you want to do together this month?"
-                : `${completedCount} of ${goals.length} celebrated`}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {goals.length === 0
-                ? "Add your first shared goal below."
-                : "Either of you can edit or mark complete — these belong to both of you."}
-            </p>
-          </div>
-          <span className="font-display text-3xl font-semibold text-lavender-deep">{pct}%</span>
-        </div>
-        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-secondary">
-          <div className="h-full bg-gradient-primary transition-all duration-500" style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-
-      {/* Goals list */}
+    <>
+      <ProgressBanner
+        icon={<Lock className="h-5 w-5 text-lavender-deep" />}
+        title={goals.length === 0 ? "Your private space." : `${completed} of ${goals.length} done`}
+        subtitle={goals.length === 0 ? "Only you can see these. Your partner cannot." : "Only you can see and edit these goals."}
+        pct={pct}
+      />
       <ul className="space-y-3">
-        {goals.map((g) => {
-          const creator = profiles[g.created_by]?.display_name ?? "Partner";
-          return (
-            <li
-              key={g.id}
-              className={`group rounded-2xl border p-5 shadow-soft transition ${
-                g.is_complete ? "border-lavender-deep/30 bg-gradient-soft" : "border-border bg-card"
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <button
-                  onClick={() => toggle(g)}
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                    g.is_complete ? "border-lavender-deep bg-lavender-deep" : "border-border hover:border-lavender-deep"
-                  }`}
-                >
-                  {g.is_complete && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
-                </button>
-                <div className="flex-1">
-                  <p className={`font-display text-lg font-semibold ${g.is_complete ? "text-muted-foreground line-through" : ""}`}>
-                    {g.title}
-                  </p>
-                  {g.description && (
-                    <p className="mt-1 text-sm text-muted-foreground">{g.description}</p>
-                  )}
-                  <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <CalendarDays className="h-3 w-3" />
-                    Added by {creator}
-                    {g.is_complete && g.completed_at && ` · Celebrated ${new Date(g.completed_at).toLocaleDateString()}`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => remove(g)}
-                  className="opacity-0 transition group-hover:opacity-100"
-                  aria-label="Delete goal"
-                >
-                  <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                </button>
-              </div>
-            </li>
-          );
-        })}
+        {goals.map((g) => (
+          <GoalRow
+            key={g.id}
+            title={g.title}
+            description={g.description}
+            isComplete={g.is_complete}
+            meta={
+              <>
+                <Lock className="h-3 w-3" /> Private
+                {g.is_complete && g.completed_at && ` · Done ${new Date(g.completed_at).toLocaleDateString()}`}
+              </>
+            }
+            onToggle={() => toggle(g)}
+            onDelete={() => remove(g)}
+          />
+        ))}
       </ul>
+      <AddGoalForm
+        atLimit={atLimit} limit={LIMIT} count={goals.length}
+        title={title} setTitle={setTitle} desc={desc} setDesc={setDesc}
+        busy={busy} onSubmit={addGoal}
+        placeholder="e.g. Read 2 books this month"
+        limitMessage={`Maximum ${LIMIT} personal goals per month.`}
+      />
+    </>
+  );
+}
 
-      {/* Add form */}
-      {atLimit ? (
-        <div className="mt-6 rounded-3xl border border-border bg-secondary/40 p-6 text-center shadow-soft">
-          <h2 className="font-display text-lg font-semibold">You've set {GOAL_LIMIT} goals this month.</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Focus beats volume. Complete or remove one to add another.
-          </p>
+// =================== SHARED PIECES ===================
+
+function ProgressBanner({ icon, title, subtitle, pct }: { icon: React.ReactNode; title: string; subtitle: string; pct: number }) {
+  return (
+    <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-soft">
+      <div className="flex items-center gap-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">{icon}</div>
+        <div className="flex-1">
+          <p className="font-display text-xl font-semibold">{title}</p>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
-      ) : (
-        <form onSubmit={addGoal} className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-soft">
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-lg font-semibold">Add a goal</h2>
-            <span className="text-xs text-muted-foreground">{goals.length} of {GOAL_LIMIT} used</span>
-          </div>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Try a new restaurant together"
-            maxLength={200}
-            className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
-          />
-          <textarea
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            placeholder="Optional details…"
-            maxLength={500}
-            rows={2}
-            className="mt-2 w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={busy || !title.trim()}
-            className="mt-3 flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
-          >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Add goal
-          </button>
-        </form>
-      )}
+        <span className="font-display text-3xl font-semibold text-lavender-deep">{pct}%</span>
+      </div>
+      <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-secondary">
+        <div className="h-full bg-gradient-primary transition-all duration-500" style={{ width: `${pct}%` }} />
+      </div>
     </div>
+  );
+}
+
+function GoalRow({
+  title, description, isComplete, meta, onToggle, onDelete,
+}: {
+  title: string;
+  description: string | null;
+  isComplete: boolean;
+  meta: React.ReactNode;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <li className={`group rounded-2xl border p-5 shadow-soft transition ${
+      isComplete ? "border-lavender-deep/30 bg-gradient-soft" : "border-border bg-card"
+    }`}>
+      <div className="flex items-start gap-4">
+        <button
+          onClick={onToggle}
+          className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
+            isComplete ? "border-lavender-deep bg-lavender-deep" : "border-border hover:border-lavender-deep"
+          }`}
+        >
+          {isComplete && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
+        </button>
+        <div className="flex-1">
+          <p className={`font-display text-lg font-semibold ${isComplete ? "text-muted-foreground line-through" : ""}`}>{title}</p>
+          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">{meta}</p>
+        </div>
+        <button onClick={onDelete} className="opacity-0 transition group-hover:opacity-100" aria-label="Delete goal">
+          <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+        </button>
+      </div>
+    </li>
+  );
+}
+
+function AddGoalForm({
+  atLimit, limit, count, title, setTitle, desc, setDesc, busy, onSubmit, placeholder, limitMessage,
+}: {
+  atLimit: boolean;
+  limit: number;
+  count: number;
+  title: string;
+  setTitle: (v: string) => void;
+  desc: string;
+  setDesc: (v: string) => void;
+  busy: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+  placeholder: string;
+  limitMessage: string;
+}) {
+  if (atLimit) {
+    return (
+      <div className="mt-6 rounded-3xl border border-border bg-secondary/40 p-6 text-center shadow-soft">
+        <h2 className="font-display text-lg font-semibold">You've set {limit} goals this month.</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{limitMessage}</p>
+      </div>
+    );
+  }
+  return (
+    <form onSubmit={onSubmit} className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-soft">
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-display text-lg font-semibold">Add a goal</h2>
+        <span className="text-xs text-muted-foreground">{count} of {limit} used</span>
+      </div>
+      <input
+        type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+        placeholder={placeholder} maxLength={200}
+        className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
+      />
+      <textarea
+        value={desc} onChange={(e) => setDesc(e.target.value)}
+        placeholder="Optional details…" maxLength={500} rows={2}
+        className="mt-2 w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
+      />
+      <button
+        type="submit" disabled={busy || !title.trim()}
+        className="mt-3 flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+        Add goal
+      </button>
+    </form>
   );
 }
