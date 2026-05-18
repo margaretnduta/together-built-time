@@ -93,6 +93,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { name: "apple-mobile-web-app-title", content: "TwoGether" },
       { name: "mobile-web-app-capable", content: "yes" },
+      // Security headers (those that are honored via meta http-equiv).
+      // X-Frame-Options must be sent as an HTTP header by the edge; we
+      // express the same intent here via CSP frame-ancestors.
+      { httpEquiv: "Content-Security-Policy", content: "frame-ancestors 'self' https://*.lovable.app https://*.lovable.dev" },
+      { httpEquiv: "X-Content-Type-Options", content: "nosniff" },
+      { name: "referrer", content: "strict-origin-when-cross-origin" },
+      { name: "permissions-policy", content: "geolocation=(), microphone=(), camera=()" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

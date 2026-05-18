@@ -10,6 +10,7 @@ const links = [
   { to: "/goals", label: "Goals" },
   { to: "/reflections", label: "Reflections" },
   { to: "/dates", label: "Dates" },
+  { to: "/account", label: "Account" },
 ] as const;
 
 const linkBase =

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          id: string
+          ip: unknown
+          summary: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          id?: string
+          ip?: unknown
+          summary?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          id?: string
+          ip?: unknown
+          summary?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       celebrations: {
         Row: {
           acknowledged_at: string | null
@@ -277,16 +310,22 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          phone: string | null
+          updated_at: string
         }
         Insert: {
           created_at?: string
           display_name?: string
           id: string
+          phone?: string | null
+          updated_at?: string
         }
         Update: {
           created_at?: string
           display_name?: string
           id?: string
+          phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -344,6 +383,10 @@ export type Database = {
       get_my_partnership_id: { Args: never; Returns: string }
       get_personal_streak: { Args: never; Returns: number }
       is_in_partnership: { Args: { _partnership_id: string }; Returns: boolean }
+      log_account_event: {
+        Args: { _action: string; _summary: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
