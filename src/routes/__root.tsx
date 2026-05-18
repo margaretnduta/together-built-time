@@ -86,8 +86,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "TwoGether — Earn your time together" },
       { name: "twitter:description", content: "A productivity platform for committed couples. Show up daily, unlock time together." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f6b97826-b4ec-4bd5-a64f-d3fda04a191d/id-preview-c0d482ae--524501f6-d052-4036-ac9a-73f56b7359da.lovable.app-1779055813238.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f6b97826-b4ec-4bd5-a64f-d3fda04a191d/id-preview-c0d482ae--524501f6-d052-4036-ac9a-73f56b7359da.lovable.app-1779055813238.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/SmZz51uu6rb8KxtvEIIcXWTmeD32/social-images/social-1779095935901-favicon.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/SmZz51uu6rb8KxtvEIIcXWTmeD32/social-images/social-1779095935901-favicon.webp" },
       { name: "theme-color", content: "#9b72cf" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
@@ -125,17 +125,9 @@ function AuthListener() {
   const router = useRouter();
   const queryClient = useQueryClient();
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       router.invalidate();
       queryClient.invalidateQueries();
-      // On sign-out (manual, token revoked, or corrupted/cleared storage),
-      // immediately bounce any auth-gated route back to /auth. Public
-      // routes (/, /auth) are left alone.
-      if (event === "SIGNED_OUT" && typeof window !== "undefined") {
-        const p = window.location.pathname;
-        const isProtected = /^\/(app|goals|reflections|dates)(\/|$)/.test(p);
-        if (isProtected) router.navigate({ to: "/auth" });
-      }
     });
     return () => subscription.unsubscribe();
   }, [router, queryClient]);
