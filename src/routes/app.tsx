@@ -116,57 +116,6 @@ function AppPage() {
   );
 }
 
-function TopBar({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <header className="border-b border-border bg-card/60 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-2 font-display text-lg font-semibold">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
-            <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
-          </div>
-          TwoGether
-        </Link>
-        <nav className="flex items-center gap-1">
-          <Link
-            to="/app"
-            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
-          >
-            Today
-          </Link>
-          <Link
-            to="/goals"
-            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
-          >
-            Goals
-          </Link>
-          <Link
-            to="/reflections"
-            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
-          >
-            Reflections
-          </Link>
-          <Link
-            to="/dates"
-            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
-          >
-            Dates
-          </Link>
-          <button
-            onClick={onSignOut}
-            className="ml-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            aria-label="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 function FullScreenLoader() {
   return (
