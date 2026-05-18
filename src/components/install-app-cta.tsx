@@ -16,22 +16,15 @@ type BeforeInstallPromptEvent = Event & {
 
 function detectPlatform() {
   if (typeof window === "undefined") {
-    return { isMobileOrTablet: false, isIOS: false, isAndroid: false, isStandalone: false };
+    return { isIOS: false, isAndroid: false, isStandalone: false };
   }
   const ua = navigator.userAgent || "";
   const isIOS = /iPhone|iPad|iPod/i.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
   const isAndroid = /Android/i.test(ua);
-  // Treat phones + tablets as mobile. Also include any narrow viewport (<1024) as a heuristic.
-  const isMobileOrTablet =
-    isIOS ||
-    isAndroid ||
-    /Mobile|Tablet|Opera Mini|IEMobile/i.test(ua) ||
-    window.matchMedia("(max-width: 1023px)").matches;
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
-    // iOS legacy flag
     (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-  return { isMobileOrTablet, isIOS, isAndroid, isStandalone };
+  return { isIOS, isAndroid, isStandalone };
 }
 
 export function InstallAppCta() {
