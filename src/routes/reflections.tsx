@@ -97,7 +97,7 @@ function ReflectionsPage() {
   return (
     <main className="min-h-screen bg-background">
       <TopBar onSignOut={signOut} />
-      <div className="mx-auto max-w-5xl px-6 py-10">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         {!partnership ? (
           <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-soft">
             <Sparkles className="mx-auto h-8 w-8 text-lavender-deep" />
