@@ -34,8 +34,8 @@ export function InstallAppCta() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const { isMobileOrTablet, isIOS: ios, isStandalone } = detectPlatform();
-    if (isStandalone || !isMobileOrTablet) return;
+    const { isIOS: ios, isStandalone } = detectPlatform();
+    if (isStandalone) return;
     setShow(true);
     setIsIOS(ios);
 
