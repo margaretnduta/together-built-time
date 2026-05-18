@@ -140,6 +140,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthListener />
       <Outlet />
+      <InstallAppCta />
       <Toaster />
     </QueryClientProvider>
   );
