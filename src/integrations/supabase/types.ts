@@ -335,6 +335,7 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { _code: string }; Returns: string }
+      dissolve_partnership: { Args: never; Returns: string }
       get_daily_streak: { Args: { _partnership_id: string }; Returns: number }
       get_monthly_couple_streak: {
         Args: { _partnership_id: string }
