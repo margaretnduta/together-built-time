@@ -87,7 +87,7 @@ function AppPage() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    navigate({ to: "/" });
+    navigate({ to: "/auth" });
   }
 
   if (loading || loadingPartnership || !user) {
