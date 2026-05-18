@@ -6,6 +6,17 @@ import { useAuth } from "@/hooks/use-auth";
 import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { UserMinus } from "lucide-react";
 
 export const Route = createFileRoute("/app")({
   head: () => ({
