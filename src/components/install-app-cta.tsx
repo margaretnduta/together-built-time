@@ -71,7 +71,7 @@ export function InstallAppCta() {
   return (
     <>
       {/* Floating CTA — mobile only, dismissible */}
-      <div className="fixed inset-x-3 bottom-3 z-50 lg:hidden">
+      <div className="fixed inset-x-3 bottom-3 z-50">
         <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-glow backdrop-blur">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
             <Smartphone className="h-5 w-5" />
