@@ -117,6 +117,12 @@
 
 @layer base {
   * { border-color: var(--color-border); }
+  html, body {
+    /* Kill horizontal scrollbars caused by oversized nav/content on
+       narrow viewports — the "side white-space" issue on mobile. */
+    overflow-x: clip;
+    max-width: 100%;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -127,6 +133,9 @@
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
+  /* Hide horizontal scrollbar on opt-in containers without losing scroll. */
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
 }
 
 @layer utilities {
