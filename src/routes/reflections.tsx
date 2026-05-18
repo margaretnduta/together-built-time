@@ -1,8 +1,9 @@
+import { TopNav } from "@/components/top-nav";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Heart, Loader2, LogOut, Sparkles, Lock, Check, BookOpen } from "lucide-react";
+import { Loader2, Sparkles, Lock, Check, BookOpen } from "lucide-react";
 import { StreakBar } from "@/components/streak-bar";
 import { toast } from "sonner";
 
@@ -96,8 +97,8 @@ function ReflectionsPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <TopBar onSignOut={signOut} />
-      <div className="mx-auto max-w-5xl px-6 py-10">
+      <TopNav onSignOut={signOut} />
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         {!partnership ? (
           <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-soft">
             <Sparkles className="mx-auto h-8 w-8 text-lavender-deep" />
@@ -121,35 +122,6 @@ function ReflectionsPage() {
   );
 }
 
-function TopBar({ onSignOut }: { onSignOut: () => void }) {
-  const linkCls = "rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground";
-  const activeCls = "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground";
-  return (
-    <header className="border-b border-border bg-card/60 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-2 font-display text-lg font-semibold">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
-            <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
-          </div>
-          TwoGether
-        </Link>
-        <nav className="flex items-center gap-1">
-          <Link to="/app" className={linkCls} activeProps={{ className: activeCls }}>Today</Link>
-          <Link to="/goals" className={linkCls} activeProps={{ className: activeCls }}>Goals</Link>
-          <Link to="/reflections" className={linkCls} activeProps={{ className: activeCls }}>Reflections</Link>
-          <Link to="/dates" className={linkCls} activeProps={{ className: activeCls }}>Dates</Link>
-          <button
-            onClick={onSignOut}
-            className="ml-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            aria-label="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 function ReflectionsView({ user, partnership }: { user: { id: string }; partnership: Partnership }) {
   const [week, setWeek] = useState(weekISO());

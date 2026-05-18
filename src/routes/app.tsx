@@ -1,8 +1,9 @@
+import { TopNav } from "@/components/top-nav";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Heart, Check, Circle, Plus, X, Loader2, Copy, LogOut, Unlock, Lock, Sparkles } from "lucide-react";
+import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 
@@ -103,8 +104,8 @@ function AppPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <TopBar onSignOut={handleSignOut} />
-      <div className="mx-auto max-w-5xl px-6 py-10">
+      <TopNav onSignOut={handleSignOut} />
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         {!partnership || partnership.status === "pending" ? (
           <Onboarding user={user} partnership={partnership} onChange={loadPartnership} />
         ) : (
@@ -115,57 +116,6 @@ function AppPage() {
   );
 }
 
-function TopBar({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <header className="border-b border-border bg-card/60 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-2 font-display text-lg font-semibold">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
-            <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
-          </div>
-          TwoGether
-        </Link>
-        <nav className="flex items-center gap-1">
-          <Link
-            to="/app"
-            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
-          >
-            Today
-          </Link>
-          <Link
-            to="/goals"
-            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
-          >
-            Goals
-          </Link>
-          <Link
-            to="/reflections"
-            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
-          >
-            Reflections
-          </Link>
-          <Link
-            to="/dates"
-            className="rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            activeProps={{ className: "rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground" }}
-          >
-            Dates
-          </Link>
-          <button
-            onClick={onSignOut}
-            className="ml-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            aria-label="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 function FullScreenLoader() {
   return (
