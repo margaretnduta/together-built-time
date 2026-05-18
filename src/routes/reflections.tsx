@@ -1,3 +1,4 @@
+import { TopNav } from "@/components/top-nav";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,7 +97,7 @@ function ReflectionsPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <TopBar onSignOut={signOut} />
+      <TopNav onSignOut={signOut} />
       <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         {!partnership ? (
           <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-soft">

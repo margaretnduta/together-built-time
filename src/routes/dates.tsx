@@ -1,3 +1,4 @@
+import { TopNav } from "@/components/top-nav";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,7 +63,7 @@ function DatesPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <TopBar onSignOut={signOut} />
+      <TopNav onSignOut={signOut} />
       <div className="mx-auto max-w-4xl px-6 py-10">
         {!partnership ? (
           <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-soft">

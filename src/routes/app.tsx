@@ -1,3 +1,4 @@
+import { TopNav } from "@/components/top-nav";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
