@@ -51,7 +51,14 @@ function AppPage() {
   const [loadingPartnership, setLoadingPartnership] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth" });
+    if (loading) return;
+    if (!user) {
+      navigate({ to: "/auth" });
+    } else if (!user.email_confirmed_at && !user.confirmed_at) {
+      // Email not yet verified — bounce back to /auth so the verify
+      // screen can guide them to confirm before accessing the app.
+      navigate({ to: "/auth", search: { verify: user.email ?? "" } as never });
+    }
   }, [user, loading, navigate]);
 
   const loadPartnership = useCallback(async () => {
