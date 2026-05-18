@@ -32,6 +32,10 @@ function AuthPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    // Floor the wall-clock duration so success and failure look the same to a
+    // network observer — kills the timing oracle that distinguishes
+    // "wrong password" from "no such user".
+    const minDuration = new Promise((r) => setTimeout(r, 600));
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
@@ -42,15 +46,30 @@ function AuthPage() {
             emailRedirectTo: `${window.location.origin}/app`,
           },
         });
-        if (error) throw error;
-        toast.success("Check your email to confirm your account.");
+        await minDuration;
+        // Always show the same message — never reveal whether the email
+        // already exists (Supabase returns 200 either way; we mirror that
+        // contract in the UI by not branching on `error`).
+        if (error && !/already|registered|exists/i.test(error.message)) {
+          throw error;
+        }
+        toast.success("If that email is new, check your inbox to confirm your account.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        await minDuration;
+        if (error) {
+          // Generic, non-enumerating message for ALL credential failures.
+          toast.error("Invalid email or password.");
+          return;
+        }
         navigate({ to: "/app" });
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
+      await minDuration;
+      // Map any remaining unexpected error to a non-revealing message,
+      // but log the real one for debugging.
+      console.error("[auth]", err);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
