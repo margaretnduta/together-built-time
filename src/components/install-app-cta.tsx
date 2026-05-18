@@ -16,22 +16,15 @@ type BeforeInstallPromptEvent = Event & {
 
 function detectPlatform() {
   if (typeof window === "undefined") {
-    return { isMobileOrTablet: false, isIOS: false, isAndroid: false, isStandalone: false };
+    return { isIOS: false, isAndroid: false, isStandalone: false };
   }
   const ua = navigator.userAgent || "";
   const isIOS = /iPhone|iPad|iPod/i.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
   const isAndroid = /Android/i.test(ua);
-  // Treat phones + tablets as mobile. Also include any narrow viewport (<1024) as a heuristic.
-  const isMobileOrTablet =
-    isIOS ||
-    isAndroid ||
-    /Mobile|Tablet|Opera Mini|IEMobile/i.test(ua) ||
-    window.matchMedia("(max-width: 1023px)").matches;
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
-    // iOS legacy flag
     (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-  return { isMobileOrTablet, isIOS, isAndroid, isStandalone };
+  return { isIOS, isAndroid, isStandalone };
 }
 
 export function InstallAppCta() {
@@ -41,8 +34,8 @@ export function InstallAppCta() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const { isMobileOrTablet, isIOS: ios, isStandalone } = detectPlatform();
-    if (isStandalone || !isMobileOrTablet) return;
+    const { isIOS: ios, isStandalone } = detectPlatform();
+    if (isStandalone) return;
     setShow(true);
     setIsIOS(ios);
 
@@ -78,7 +71,7 @@ export function InstallAppCta() {
   return (
     <>
       {/* Floating CTA — mobile only, dismissible */}
-      <div className="fixed inset-x-3 bottom-3 z-50 lg:hidden">
+      <div className="fixed inset-x-3 bottom-3 z-50">
         <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-glow backdrop-blur">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
             <Smartphone className="h-5 w-5" />
