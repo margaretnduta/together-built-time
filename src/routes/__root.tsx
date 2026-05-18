@@ -125,9 +125,17 @@ function AuthListener() {
   const router = useRouter();
   const queryClient = useQueryClient();
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       router.invalidate();
       queryClient.invalidateQueries();
+      // On sign-out (manual, token revoked, or corrupted/cleared storage),
+      // immediately bounce any auth-gated route back to /auth. Public
+      // routes (/, /auth) are left alone.
+      if (event === "SIGNED_OUT" && typeof window !== "undefined") {
+        const p = window.location.pathname;
+        const isProtected = /^\/(app|goals|reflections|dates)(\/|$)/.test(p);
+        if (isProtected) router.navigate({ to: "/auth" });
+      }
     });
     return () => subscription.unsubscribe();
   }, [router, queryClient]);
