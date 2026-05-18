@@ -499,7 +499,89 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
           <ProgressBar pct={partnerPct} />
         </section>
       </div>
+
+      <ManagePartnership partnerName={partnerName} />
     </div>
+  );
+}
+
+function ManagePartnership({ partnerName }: { partnerName: string }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function handleDissolve() {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("dissolve_partnership");
+      if (error) throw error;
+      toast.success("Partnership ended. You can invite a new partner now.");
+      setOpen(false);
+      // Realtime listener on partnerships will refresh the screen and
+      // surface the Onboarding flow automatically.
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Could not end partnership";
+      toast.error(msg.includes("no_partnership") ? "No active partnership found." : msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            Partnership
+          </p>
+          <h3 className="mt-1 font-display text-lg font-semibold">
+            Paired with {partnerName}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            End this partnership to invite or accept a new partner. Finish this step before starting a new invite.
+          </p>
+        </div>
+        <button
+          onClick={() => setOpen(true)}
+          disabled={busy}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-destructive/30 bg-background px-4 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/10 disabled:opacity-60"
+        >
+          <UserMinus className="h-4 w-4" /> Remove partner
+        </button>
+      </div>
+
+      <AlertDialog open={open} onOpenChange={(o) => !busy && setOpen(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End partnership with {partnerName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. Your shared today tasks, monthly goals, reflections,
+              important dates and celebrations will stay archived but neither of you will
+              be able to access or edit them anymore. Streaks tied to this partnership will reset.
+              After this, you'll be able to invite or accept a new partner.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep partnership</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDissolve();
+              }}
+              disabled={busy}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {busy ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Ending…
+                </span>
+              ) : (
+                "Yes, end partnership"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
   );
 }
 
