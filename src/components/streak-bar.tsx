@@ -46,7 +46,7 @@ export function StreakBar({ partnershipId, userId }: Props) {
   if (!loaded) return null;
 
   return (
-    <div className="mb-6 grid grid-cols-3 gap-3">
+    <div className="mb-6 grid grid-cols-1 gap-3 xs:grid-cols-3 sm:grid-cols-3">
       <StreakPill
         icon={<Flame className="h-4 w-4" />}
         label="Daily together"
