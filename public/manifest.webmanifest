@@ -1,0 +1,32 @@
+{
+  "name": "TwoGether — Earn your time together",
+  "short_name": "TwoGether",
+  "description": "A quiet productivity space for two committed people.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8e8ee",
+  "theme_color": "#9b72cf",
+  "categories": ["lifestyle", "productivity", "social"],
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
