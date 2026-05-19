@@ -122,11 +122,12 @@ function ProfileCard({ userId }: { userId: string }) {
   const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, display_name, phone")
+      .select("id, display_name, phone, avatar_url")
       .eq("id", userId)
       .maybeSingle();
     if (error) {
@@ -164,7 +165,6 @@ function ProfileCard({ userId }: { userId: string }) {
       .eq("id", userId);
     setSaving(false);
     if (error) {
-      // Don't leak DB internals
       toast.error("Could not save your profile. Please try again.");
       return;
     }
@@ -172,9 +172,93 @@ function ProfileCard({ userId }: { userId: string }) {
     load();
   }
 
+  async function onAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-uploading the same file
+    if (!file) return;
+
+    if (!["image/png","image/jpeg","image/webp","image/gif"].includes(file.type)) {
+      toast.error("Use a PNG, JPG, WEBP, or GIF image.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2 MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      // Path is scoped under the user's own folder — storage RLS only allows
+      // writes when the first path segment matches auth.uid().
+      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+      if (upErr) {
+        toast.error("Upload failed. Please try again.");
+        return;
+      }
+
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = pub.publicUrl;
+
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", userId);
+      if (dbErr) {
+        toast.error("Saved the image but couldn't update your profile.");
+        return;
+      }
+
+      // Best-effort cleanup of the previous file (ignore failures).
+      if (profile?.avatar_url) {
+        const prev = extractStoragePath(profile.avatar_url);
+        if (prev) await supabase.storage.from("avatars").remove([prev]);
+      }
+
+      toast.success("Profile picture updated.");
+      load();
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function removeAvatar() {
+    if (!profile?.avatar_url) return;
+    setUploadingAvatar(true);
+    try {
+      const path = extractStoragePath(profile.avatar_url);
+      if (path) await supabase.storage.from("avatars").remove([path]);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_url: null })
+        .eq("id", userId);
+      if (error) {
+        toast.error("Could not remove the picture.");
+        return;
+      }
+      toast.success("Profile picture removed.");
+      load();
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   const changed =
     !!profile &&
     (displayName !== (profile.display_name ?? "") || (phone || "") !== (profile.phone ?? ""));
+
+  const initials =
+    (profile?.display_name ?? displayName ?? "?")
+      .trim()
+      .split(/\s+/)
+      .map((s) => s[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?";
 
   return (
     <Section
@@ -182,6 +266,54 @@ function ProfileCard({ userId }: { userId: string }) {
       title="Profile"
       description="Visible to your partner inside the app."
     >
+      {/* Avatar */}
+      <div className="flex items-center gap-4">
+        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border bg-secondary">
+          {profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt="Your profile picture"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center font-display text-2xl font-semibold text-lavender-deep">
+              {initials}
+            </div>
+          )}
+          {uploadingAvatar && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
+            </div>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm font-medium transition hover:bg-secondary">
+            <Camera className="h-4 w-4" />
+            {profile?.avatar_url ? "Change picture" : "Upload picture"}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={onAvatarPick}
+              disabled={uploadingAvatar}
+            />
+          </label>
+          {profile?.avatar_url && (
+            <button
+              type="button"
+              onClick={removeAvatar}
+              disabled={uploadingAvatar}
+              className="inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-background px-3 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/10 disabled:opacity-60"
+            >
+              <Trash2 className="h-4 w-4" /> Remove
+            </button>
+          )}
+          <p className="basis-full text-xs text-muted-foreground">
+            PNG, JPG, WEBP, or GIF up to 2 MB.
+          </p>
+        </div>
+      </div>
+
       <Field label="Display name" error={errors.display_name}>
         <input
           type="text"
@@ -215,6 +347,14 @@ function ProfileCard({ userId }: { userId: string }) {
       </div>
     </Section>
   );
+}
+
+// Pulls the storage object path out of a Supabase public URL like
+// .../storage/v1/object/public/avatars/<userId>/avatar-123.png
+function extractStoragePath(publicUrl: string): string | null {
+  const marker = "/storage/v1/object/public/avatars/";
+  const i = publicUrl.indexOf(marker);
+  return i === -1 ? null : publicUrl.slice(i + marker.length);
 }
 
 // =================== EMAIL ===================
