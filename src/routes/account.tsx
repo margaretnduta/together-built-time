@@ -60,7 +60,7 @@ const passwordSchema = z
     message: "Choose a password different from the current one",
   });
 
-type Profile = { id: string; display_name: string; phone: string | null };
+type Profile = { id: string; display_name: string; phone: string | null; avatar_url: string | null };
 type AuditEntry = {
   id: string;
   action: string;
