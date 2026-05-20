@@ -470,23 +470,42 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
               e.preventDefault();
               addTask();
             }}
-            className="mt-4 flex gap-2"
+            className="mt-4 space-y-2"
           >
-            <input
-              type="text"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Add a task for today…"
-              maxLength={200}
-              className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm focus:border-ring focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={adding || !newTitle.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground transition hover:scale-105 disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Add a task for today…"
+                maxLength={200}
+                className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm focus:border-ring focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={adding || !newTitle.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground transition hover:scale-105 disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Repeat className="h-3 w-3" /> Repeat:</span>
+              {([
+                { v: "once", label: "Once" },
+                { v: "daily", label: "Every day" },
+                { v: "weekly", label: `Every ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date().getDay()]}` },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.v} type="button" onClick={() => setNewRecurrence(opt.v)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    newRecurrence === opt.v ? "bg-gradient-primary text-primary-foreground shadow-soft" : "border border-border bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </form>
 
           <ProgressBar pct={myPct} />
