@@ -31,6 +31,9 @@ type Goal = {
   completed_by: string | null;
   created_by: string;
   sort_order: number;
+  approval_status: "pending" | "accepted";
+  proposed_by: string | null;
+  approved_by: string[];
 };
 
 type Profile = { id: string; display_name: string };
