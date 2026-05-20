@@ -308,6 +308,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
   const [category, setCategory] = useState<Category>("anniversary");
   const [recurrence, setRecurrence] = useState<Recurrence>("yearly");
   const [notes, setNotes] = useState("");
+  const [dressCode, setDressCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -324,12 +325,16 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
       category,
       recurrence,
       notes: notes.trim() || null,
+      dress_code: dressCode.trim() || null,
+      proposed_by: user.id,
+      approved_by: [user.id],
+      approval_status: "pending",
     } as never);
     if (error) toast.error(error.message);
     else {
-      setTitle(""); setDate(undefined); setNotes("");
+      setTitle(""); setDate(undefined); setNotes(""); setDressCode("");
       setCategory("anniversary"); setRecurrence("yearly");
-      toast.success("Date saved 💖");
+      toast.success("Sent for partner approval 💌");
     }
     setBusy(false);
   }
