@@ -156,20 +156,29 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
     return () => { supabase.removeChannel(ch); };
   }, [partnership.id, load]);
 
+  const accepted = useMemo(() => items.filter(i => i.approval_status === "accepted"), [items]);
+  const pendingForMe = useMemo(() => items.filter(i => i.approval_status === "pending" && !(i.approved_by ?? []).includes(user.id)), [items, user.id]);
+
   const enriched = useMemo(() => {
-    return items
+    return accepted
       .map((it) => {
         const occ = nextOccurrence(it.date, it.recurrence);
         return { it, occ, days: daysUntil(occ) };
       })
       .sort((a, b) => a.days - b.days);
-  }, [items]);
+  }, [accepted]);
 
   const upcoming = enriched.find((e) => e.days >= 0);
 
   async function remove(id: string) {
     const { error } = await supabase.from("important_dates").delete().eq("id", id);
     if (error) toast.error(error.message);
+  }
+  async function approve(it: ImportantDate) {
+    const next = Array.from(new Set([...(it.approved_by ?? []), user.id]));
+    const { error } = await supabase.from("important_dates").update({ approved_by: next } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
+    else toast.success("Accepted 💞");
   }
 
   return (
@@ -193,9 +202,38 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                 {upcoming.it.recurrence === "yearly" && yearsSince(upcoming.it.date, upcoming.occ) > 0 &&
                   ` · ${yearsSince(upcoming.it.date, upcoming.occ)} year${yearsSince(upcoming.it.date, upcoming.occ) === 1 ? "" : "s"}`}
               </p>
+              {upcoming.it.dress_code && (
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
+                  <Shirt className="h-3.5 w-3.5" /> {upcoming.it.dress_code}
+                </p>
+              )}
             </div>
             <p className="font-display text-3xl font-semibold">{countdownLabel(upcoming.days)}</p>
           </div>
+        </div>
+      )}
+
+      {/* Pending partner approval */}
+      {pendingForMe.length > 0 && (
+        <div className="mb-6 rounded-3xl border border-lavender-deep/30 bg-gradient-soft p-5 shadow-soft">
+          <p className="text-xs font-medium uppercase tracking-widest text-lavender-deep">Waiting for your approval</p>
+          <ul className="mt-3 space-y-2">
+            {pendingForMe.map(it => (
+              <li key={it.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+                <div className="flex-1">
+                  <p className="font-display text-base font-semibold">{it.title}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {new Date(it.date + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })} · {CATEGORY_META[it.category].label}
+                  </p>
+                  {it.dress_code && <p className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1"><Shirt className="h-3 w-3" />{it.dress_code}</p>}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => approve(it)} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft">Accept</button>
+                  <button onClick={() => remove(it.id)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">Decline</button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -209,7 +247,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
         )}
         {!loading && enriched.length === 0 && (
           <li className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
-            No dates yet. Add the first one above.
+            No accepted dates yet. Add one above — your partner will approve it.
           </li>
         )}
         {enriched.map(({ it, occ, days }) => {
@@ -235,6 +273,11 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                     {occ.toLocaleDateString(undefined, { weekday: "short", month: "long", day: "numeric", year: "numeric" })}
                     {years > 0 && ` · ${years} year${years === 1 ? "" : "s"}`}
                   </p>
+                  {it.dress_code && (
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-foreground/80">
+                      <Shirt className="h-4 w-4 text-lavender-deep" /> <span className="font-medium">Dress:</span> {it.dress_code}
+                    </p>
+                  )}
                   {it.notes && <p className="mt-2 text-sm text-foreground/80">{it.notes}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-2">
