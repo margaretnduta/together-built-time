@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles } from "lucide-react";
+import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import {
@@ -288,6 +288,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [newTitle, setNewTitle] = useState("");
+  const [newRecurrence, setNewRecurrence] = useState<"once" | "daily" | "weekly">("once");
   const [adding, setAdding] = useState(false);
 
   const loadTasks = useCallback(async () => {
@@ -311,7 +312,14 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     setProfiles(map);
   }, [user.id, partnerId]);
 
-  useEffect(() => { loadTasks(); loadProfiles(); }, [loadTasks, loadProfiles]);
+  // Materialize today's recurring tasks once per mount, then load tasks.
+  useEffect(() => {
+    (async () => {
+      await supabase.rpc("materialize_recurring_tasks_for_today");
+      loadTasks();
+    })();
+    loadProfiles();
+  }, [loadTasks, loadProfiles]);
 
   // Realtime subscription
   useEffect(() => {
@@ -339,15 +347,31 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     const title = newTitle.trim();
     if (!title) return;
     setAdding(true);
+    // If recurring, create template first so we capture the template_id
+    let templateId: string | null = null;
+    if (newRecurrence !== "once") {
+      const weekday = newRecurrence === "weekly" ? new Date().getDay() : null;
+      const { data: tpl, error: tplErr } = await supabase.from("recurring_task_templates").insert({
+        owner_id: user.id,
+        partnership_id: partnership.id,
+        title,
+        recurrence: newRecurrence,
+        weekday,
+        active: true,
+      } as never).select("id").single();
+      if (tplErr) { toast.error(tplErr.message); setAdding(false); return; }
+      templateId = (tpl as { id: string } | null)?.id ?? null;
+    }
     const { error } = await supabase.from("daily_tasks").insert({
       partnership_id: partnership.id,
       owner_id: user.id,
       task_date: today,
       title,
       sort_order: myTasks.length,
+      template_id: templateId,
     } as never);
     if (error) toast.error(error.message);
-    else setNewTitle("");
+    else { setNewTitle(""); setNewRecurrence("once"); }
     setAdding(false);
   }
 
@@ -446,23 +470,42 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
               e.preventDefault();
               addTask();
             }}
-            className="mt-4 flex gap-2"
+            className="mt-4 space-y-2"
           >
-            <input
-              type="text"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Add a task for today…"
-              maxLength={200}
-              className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm focus:border-ring focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={adding || !newTitle.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground transition hover:scale-105 disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Add a task for today…"
+                maxLength={200}
+                className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm focus:border-ring focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={adding || !newTitle.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground transition hover:scale-105 disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Repeat className="h-3 w-3" /> Repeat:</span>
+              {([
+                { v: "once", label: "Once" },
+                { v: "daily", label: "Every day" },
+                { v: "weekly", label: `Every ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date().getDay()]}` },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.v} type="button" onClick={() => setNewRecurrence(opt.v)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    newRecurrence === opt.v ? "bg-gradient-primary text-primary-foreground shadow-soft" : "border border-border bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </form>
 
           <ProgressBar pct={myPct} />
@@ -500,8 +543,85 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
         </section>
       </div>
 
+      <RecurringTemplates userId={user.id} partnershipId={partnership.id} />
       <ManagePartnership partnerName={partnerName} />
     </div>
+  );
+}
+
+type Template = {
+  id: string;
+  title: string;
+  recurrence: "daily" | "weekly";
+  weekday: number | null;
+  active: boolean;
+};
+
+function RecurringTemplates({ userId, partnershipId }: { userId: string; partnershipId: string }) {
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from("recurring_task_templates")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: false });
+    setTemplates((data as Template[]) ?? []);
+  }, [userId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`templates-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "recurring_task_templates", filter: `owner_id=eq.${userId}` }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [userId, load]);
+
+  async function toggleActive(t: Template) {
+    await supabase.from("recurring_task_templates").update({ active: !t.active } as never).eq("id", t.id);
+  }
+  async function remove(t: Template) {
+    await supabase.from("recurring_task_templates").delete().eq("id", t.id);
+    toast.success("Recurring task removed");
+  }
+
+  if (templates.length === 0) return null;
+
+  return (
+    <section className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft">
+      <div className="flex items-center gap-2">
+        <Repeat className="h-4 w-4 text-lavender-deep" />
+        <h3 className="font-display text-lg font-semibold">Your recurring tasks</h3>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        These automatically appear on your daily list. Pause or remove anytime.
+      </p>
+      <ul className="mt-4 space-y-2">
+        {templates.map((t) => (
+          <li key={t.id} className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
+            <div className="flex-1">
+              <p className={`text-sm font-medium ${t.active ? "" : "text-muted-foreground line-through"}`}>{t.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {t.recurrence === "daily" ? "Every day" : `Every ${DAYS[t.weekday ?? 0]}`}
+                {!t.active && " · paused"}
+              </p>
+            </div>
+            <button
+              onClick={() => toggleActive(t)}
+              className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              {t.active ? "Pause" : "Resume"}
+            </button>
+            <button onClick={() => remove(t)} aria-label="Delete template" className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

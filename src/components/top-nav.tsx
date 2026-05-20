@@ -1,5 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, LogOut } from "lucide-react";
+import { Heart, LogOut, Menu } from "lucide-react";
+import { useState } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 
 interface TopNavProps {
   onSignOut: () => void;
@@ -14,14 +23,59 @@ const links = [
 ] as const;
 
 const linkBase =
-  "shrink-0 rounded-full px-3 py-1.5 text-xs sm:text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground sm:px-4";
+  "shrink-0 rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground";
 const linkActive =
-  "shrink-0 rounded-full px-3 py-1.5 text-xs sm:text-sm bg-secondary text-foreground sm:px-4";
+  "shrink-0 rounded-full px-4 py-1.5 text-sm bg-secondary text-foreground";
 
 export function TopNav({ onSignOut }: TopNavProps) {
+  const [open, setOpen] = useState(false);
+
   return (
     <header className="border-b border-border bg-card/60 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
+      <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+        {/* Mobile hamburger */}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <button
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground md:hidden"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-72 p-0">
+            <SheetHeader className="border-b border-border p-6">
+              <SheetTitle className="flex items-center gap-2 font-display text-lg">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
+                  <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
+                </div>
+                TwoGether
+              </SheetTitle>
+            </SheetHeader>
+            <nav className="flex flex-col gap-1 p-4">
+              {links.map((l) => (
+                <SheetClose asChild key={l.to}>
+                  <Link
+                    to={l.to}
+                    className="rounded-xl px-4 py-3 text-base font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                    activeProps={{ className: "rounded-xl px-4 py-3 text-base font-medium bg-gradient-primary text-primary-foreground shadow-soft" }}
+                  >
+                    {l.label}
+                  </Link>
+                </SheetClose>
+              ))}
+            </nav>
+            <div className="absolute inset-x-0 bottom-0 border-t border-border p-4">
+              <button
+                onClick={() => { setOpen(false); onSignOut(); }}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4" /> Sign out
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
         <Link
           to="/"
           className="flex shrink-0 items-center gap-2 font-display text-base font-semibold sm:text-lg"
@@ -30,12 +84,11 @@ export function TopNav({ onSignOut }: TopNavProps) {
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
             <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
           </div>
-          <span className="hidden xs:inline sm:inline">TwoGether</span>
+          <span className="hidden sm:inline">TwoGether</span>
         </Link>
 
-        {/* Nav scrolls horizontally on tiny screens without ever forcing the
-            page to scroll — the parent `flex-1 min-w-0` clips overflow. */}
-        <nav className="no-scrollbar flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto sm:gap-1">
+        {/* Desktop nav */}
+        <nav className="ml-2 hidden min-w-0 flex-1 items-center gap-1 md:flex">
           {links.map((l) => (
             <Link
               key={l.to}
@@ -48,9 +101,11 @@ export function TopNav({ onSignOut }: TopNavProps) {
           ))}
         </nav>
 
+        <div className="flex-1 md:hidden" />
+
         <button
           onClick={onSignOut}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground md:flex"
           aria-label="Sign out"
         >
           <LogOut className="h-4 w-4" />

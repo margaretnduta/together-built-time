@@ -85,6 +85,8 @@ export type Database = {
       }
       couple_goals: {
         Row: {
+          approval_status: string
+          approved_by: string[]
           completed_at: string | null
           completed_by: string | null
           created_at: string
@@ -94,11 +96,14 @@ export type Database = {
           is_complete: boolean
           month: string
           partnership_id: string
+          proposed_by: string | null
           sort_order: number
           title: string
           updated_at: string
         }
         Insert: {
+          approval_status?: string
+          approved_by?: string[]
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -108,11 +113,14 @@ export type Database = {
           is_complete?: boolean
           month: string
           partnership_id: string
+          proposed_by?: string | null
           sort_order?: number
           title: string
           updated_at?: string
         }
         Update: {
+          approval_status?: string
+          approved_by?: string[]
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -122,6 +130,7 @@ export type Database = {
           is_complete?: boolean
           month?: string
           partnership_id?: string
+          proposed_by?: string | null
           sort_order?: number
           title?: string
           updated_at?: string
@@ -138,6 +147,7 @@ export type Database = {
           partnership_id: string
           sort_order: number
           task_date: string
+          template_id: string | null
           title: string
         }
         Insert: {
@@ -149,6 +159,7 @@ export type Database = {
           partnership_id: string
           sort_order?: number
           task_date?: string
+          template_id?: string | null
           title: string
         }
         Update: {
@@ -160,6 +171,7 @@ export type Database = {
           partnership_id?: string
           sort_order?: number
           task_date?: string
+          template_id?: string | null
           title?: string
         }
         Relationships: [
@@ -181,37 +193,49 @@ export type Database = {
       }
       important_dates: {
         Row: {
+          approval_status: string
+          approved_by: string[]
           category: string
           created_at: string
           created_by: string
           date: string
+          dress_code: string | null
           id: string
           notes: string | null
           partnership_id: string
+          proposed_by: string | null
           recurrence: string
           title: string
           updated_at: string
         }
         Insert: {
+          approval_status?: string
+          approved_by?: string[]
           category?: string
           created_at?: string
           created_by: string
           date: string
+          dress_code?: string | null
           id?: string
           notes?: string | null
           partnership_id: string
+          proposed_by?: string | null
           recurrence?: string
           title: string
           updated_at?: string
         }
         Update: {
+          approval_status?: string
+          approved_by?: string[]
           category?: string
           created_at?: string
           created_by?: string
           date?: string
+          dress_code?: string | null
           id?: string
           notes?: string | null
           partnership_id?: string
+          proposed_by?: string | null
           recurrence?: string
           title?: string
           updated_at?: string
@@ -332,6 +356,39 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_task_templates: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          owner_id: string
+          partnership_id: string
+          recurrence: string
+          title: string
+          weekday: number | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          owner_id: string
+          partnership_id: string
+          recurrence: string
+          title: string
+          weekday?: number | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          owner_id?: string
+          partnership_id?: string
+          recurrence?: string
+          title?: string
+          weekday?: number | null
+        }
+        Relationships: []
+      }
       weekly_reflections: {
         Row: {
           appreciation_for_partner: string | null
@@ -390,6 +447,7 @@ export type Database = {
         Args: { _action: string; _summary: string }
         Returns: undefined
       }
+      materialize_recurring_tasks_for_today: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never

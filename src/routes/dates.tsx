@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon } from "lucide-react";
+import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,6 +27,10 @@ type ImportantDate = {
   category: Category;
   recurrence: Recurrence;
   notes: string | null;
+  dress_code: string | null;
+  approval_status: "pending" | "accepted";
+  proposed_by: string | null;
+  approved_by: string[];
 };
 
 function DatesPage() {
@@ -152,20 +156,29 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
     return () => { supabase.removeChannel(ch); };
   }, [partnership.id, load]);
 
+  const accepted = useMemo(() => items.filter(i => i.approval_status === "accepted"), [items]);
+  const pendingForMe = useMemo(() => items.filter(i => i.approval_status === "pending" && !(i.approved_by ?? []).includes(user.id)), [items, user.id]);
+
   const enriched = useMemo(() => {
-    return items
+    return accepted
       .map((it) => {
         const occ = nextOccurrence(it.date, it.recurrence);
         return { it, occ, days: daysUntil(occ) };
       })
       .sort((a, b) => a.days - b.days);
-  }, [items]);
+  }, [accepted]);
 
   const upcoming = enriched.find((e) => e.days >= 0);
 
   async function remove(id: string) {
     const { error } = await supabase.from("important_dates").delete().eq("id", id);
     if (error) toast.error(error.message);
+  }
+  async function approve(it: ImportantDate) {
+    const next = Array.from(new Set([...(it.approved_by ?? []), user.id]));
+    const { error } = await supabase.from("important_dates").update({ approved_by: next } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
+    else toast.success("Accepted 💞");
   }
 
   return (
@@ -189,9 +202,38 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                 {upcoming.it.recurrence === "yearly" && yearsSince(upcoming.it.date, upcoming.occ) > 0 &&
                   ` · ${yearsSince(upcoming.it.date, upcoming.occ)} year${yearsSince(upcoming.it.date, upcoming.occ) === 1 ? "" : "s"}`}
               </p>
+              {upcoming.it.dress_code && (
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
+                  <Shirt className="h-3.5 w-3.5" /> {upcoming.it.dress_code}
+                </p>
+              )}
             </div>
             <p className="font-display text-3xl font-semibold">{countdownLabel(upcoming.days)}</p>
           </div>
+        </div>
+      )}
+
+      {/* Pending partner approval */}
+      {pendingForMe.length > 0 && (
+        <div className="mb-6 rounded-3xl border border-lavender-deep/30 bg-gradient-soft p-5 shadow-soft">
+          <p className="text-xs font-medium uppercase tracking-widest text-lavender-deep">Waiting for your approval</p>
+          <ul className="mt-3 space-y-2">
+            {pendingForMe.map(it => (
+              <li key={it.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+                <div className="flex-1">
+                  <p className="font-display text-base font-semibold">{it.title}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {new Date(it.date + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })} · {CATEGORY_META[it.category].label}
+                  </p>
+                  {it.dress_code && <p className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1"><Shirt className="h-3 w-3" />{it.dress_code}</p>}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => approve(it)} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft">Accept</button>
+                  <button onClick={() => remove(it.id)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">Decline</button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -205,7 +247,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
         )}
         {!loading && enriched.length === 0 && (
           <li className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
-            No dates yet. Add the first one above.
+            No accepted dates yet. Add one above — your partner will approve it.
           </li>
         )}
         {enriched.map(({ it, occ, days }) => {
@@ -231,6 +273,11 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                     {occ.toLocaleDateString(undefined, { weekday: "short", month: "long", day: "numeric", year: "numeric" })}
                     {years > 0 && ` · ${years} year${years === 1 ? "" : "s"}`}
                   </p>
+                  {it.dress_code && (
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-foreground/80">
+                      <Shirt className="h-4 w-4 text-lavender-deep" /> <span className="font-medium">Dress:</span> {it.dress_code}
+                    </p>
+                  )}
                   {it.notes && <p className="mt-2 text-sm text-foreground/80">{it.notes}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-2">
@@ -261,6 +308,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
   const [category, setCategory] = useState<Category>("anniversary");
   const [recurrence, setRecurrence] = useState<Recurrence>("yearly");
   const [notes, setNotes] = useState("");
+  const [dressCode, setDressCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -277,12 +325,16 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
       category,
       recurrence,
       notes: notes.trim() || null,
+      dress_code: dressCode.trim() || null,
+      proposed_by: user.id,
+      approved_by: [user.id],
+      approval_status: "pending",
     } as never);
     if (error) toast.error(error.message);
     else {
-      setTitle(""); setDate(undefined); setNotes("");
+      setTitle(""); setDate(undefined); setNotes(""); setDressCode("");
       setCategory("anniversary"); setRecurrence("yearly");
-      toast.success("Date saved 💖");
+      toast.success("Sent for partner approval 💌");
     }
     setBusy(false);
   }
@@ -363,6 +415,15 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
         </div>
       </div>
 
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5">
+        <Shirt className="h-4 w-4 shrink-0 text-lavender-deep" />
+        <input
+          type="text" value={dressCode} onChange={(e) => setDressCode(e.target.value)}
+          placeholder="Dress code / attire (optional)" maxLength={200}
+          className="flex-1 bg-transparent text-sm focus:outline-none"
+        />
+      </div>
+
       <textarea
         value={notes} onChange={(e) => setNotes(e.target.value)}
         placeholder="Optional notes (where, why it matters…)" maxLength={500} rows={2}
@@ -374,7 +435,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
         className="mt-3 flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        Save date
+        Propose date
       </button>
     </form>
   );
