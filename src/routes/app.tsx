@@ -288,6 +288,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [newTitle, setNewTitle] = useState("");
+  const [newRecurrence, setNewRecurrence] = useState<"once" | "daily" | "weekly">("once");
   const [adding, setAdding] = useState(false);
 
   const loadTasks = useCallback(async () => {
@@ -311,7 +312,14 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     setProfiles(map);
   }, [user.id, partnerId]);
 
-  useEffect(() => { loadTasks(); loadProfiles(); }, [loadTasks, loadProfiles]);
+  // Materialize today's recurring tasks once per mount, then load tasks.
+  useEffect(() => {
+    (async () => {
+      await supabase.rpc("materialize_recurring_tasks_for_today");
+      loadTasks();
+    })();
+    loadProfiles();
+  }, [loadTasks, loadProfiles]);
 
   // Realtime subscription
   useEffect(() => {
@@ -339,15 +347,31 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     const title = newTitle.trim();
     if (!title) return;
     setAdding(true);
+    // If recurring, create template first so we capture the template_id
+    let templateId: string | null = null;
+    if (newRecurrence !== "once") {
+      const weekday = newRecurrence === "weekly" ? new Date().getDay() : null;
+      const { data: tpl, error: tplErr } = await supabase.from("recurring_task_templates").insert({
+        owner_id: user.id,
+        partnership_id: partnership.id,
+        title,
+        recurrence: newRecurrence,
+        weekday,
+        active: true,
+      } as never).select("id").single();
+      if (tplErr) { toast.error(tplErr.message); setAdding(false); return; }
+      templateId = (tpl as { id: string } | null)?.id ?? null;
+    }
     const { error } = await supabase.from("daily_tasks").insert({
       partnership_id: partnership.id,
       owner_id: user.id,
       task_date: today,
       title,
       sort_order: myTasks.length,
+      template_id: templateId,
     } as never);
     if (error) toast.error(error.message);
-    else setNewTitle("");
+    else { setNewTitle(""); setNewRecurrence("once"); }
     setAdding(false);
   }
 
