@@ -415,6 +415,15 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
         </div>
       </div>
 
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5">
+        <Shirt className="h-4 w-4 shrink-0 text-lavender-deep" />
+        <input
+          type="text" value={dressCode} onChange={(e) => setDressCode(e.target.value)}
+          placeholder="Dress code / attire (optional)" maxLength={200}
+          className="flex-1 bg-transparent text-sm focus:outline-none"
+        />
+      </div>
+
       <textarea
         value={notes} onChange={(e) => setNotes(e.target.value)}
         placeholder="Optional notes (where, why it matters…)" maxLength={500} rows={2}
@@ -426,7 +435,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
         className="mt-3 flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        Save date
+        Propose date
       </button>
     </form>
   );
