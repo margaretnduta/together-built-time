@@ -227,8 +227,6 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
     return () => { supabase.removeChannel(ch); };
   }, [partnership.id, month, load]);
 
-  const completed = useMemo(() => goals.filter((g) => g.is_complete).length, [goals]);
-  const pct = goals.length === 0 ? 0 : Math.round((completed / goals.length) * 100);
   const LIMIT = 3;
   const atLimit = goals.length >= LIMIT;
 
