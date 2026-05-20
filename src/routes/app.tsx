@@ -543,8 +543,85 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
         </section>
       </div>
 
+      <RecurringTemplates userId={user.id} partnershipId={partnership.id} />
       <ManagePartnership partnerName={partnerName} />
     </div>
+  );
+}
+
+type Template = {
+  id: string;
+  title: string;
+  recurrence: "daily" | "weekly";
+  weekday: number | null;
+  active: boolean;
+};
+
+function RecurringTemplates({ userId, partnershipId }: { userId: string; partnershipId: string }) {
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from("recurring_task_templates")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: false });
+    setTemplates((data as Template[]) ?? []);
+  }, [userId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`templates-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "recurring_task_templates", filter: `owner_id=eq.${userId}` }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [userId, load]);
+
+  async function toggleActive(t: Template) {
+    await supabase.from("recurring_task_templates").update({ active: !t.active } as never).eq("id", t.id);
+  }
+  async function remove(t: Template) {
+    await supabase.from("recurring_task_templates").delete().eq("id", t.id);
+    toast.success("Recurring task removed");
+  }
+
+  if (templates.length === 0) return null;
+
+  return (
+    <section className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft">
+      <div className="flex items-center gap-2">
+        <Repeat className="h-4 w-4 text-lavender-deep" />
+        <h3 className="font-display text-lg font-semibold">Your recurring tasks</h3>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        These automatically appear on your daily list. Pause or remove anytime.
+      </p>
+      <ul className="mt-4 space-y-2">
+        {templates.map((t) => (
+          <li key={t.id} className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
+            <div className="flex-1">
+              <p className={`text-sm font-medium ${t.active ? "" : "text-muted-foreground line-through"}`}>{t.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {t.recurrence === "daily" ? "Every day" : `Every ${DAYS[t.weekday ?? 0]}`}
+                {!t.active && " · paused"}
+              </p>
+            </div>
+            <button
+              onClick={() => toggleActive(t)}
+              className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              {t.active ? "Pause" : "Resume"}
+            </button>
+            <button onClick={() => remove(t)} aria-label="Delete template" className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
