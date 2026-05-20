@@ -240,29 +240,73 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
       partnership_id: partnership.id, month,
       title: title.trim(), description: desc.trim() || null,
       created_by: user.id, sort_order: goals.length,
+      proposed_by: user.id,
+      approved_by: [user.id],
+      approval_status: "pending",
     } as never);
     if (error) toast.error(error.message);
-    else { setTitle(""); setDesc(""); }
+    else { setTitle(""); setDesc(""); toast.success("Sent for partner approval 💌"); }
     setBusy(false);
   }
   async function toggle(g: Goal) {
+    if (g.approval_status !== "accepted") {
+      toast.error("Waiting for partner approval before this can be completed.");
+      return;
+    }
     const { error } = await supabase.from("couple_goals").update({ is_complete: !g.is_complete } as never).eq("id", g.id);
     if (error) toast.error(error.message);
     else if (!g.is_complete) toast.success("Goal celebrated 🎉");
   }
   async function remove(g: Goal) { await supabase.from("couple_goals").delete().eq("id", g.id); }
 
+  async function approve(g: Goal) {
+    const next = Array.from(new Set([...(g.approved_by ?? []), user.id]));
+    const { error } = await supabase.from("couple_goals").update({ approved_by: next } as never).eq("id", g.id);
+    if (error) toast.error(error.message);
+    else toast.success("Accepted 💞");
+  }
+
+  const accepted = goals.filter(g => g.approval_status === "accepted");
+  const pendingForMe = goals.filter(g => g.approval_status === "pending" && !(g.approved_by ?? []).includes(user.id));
+  const pendingMine = goals.filter(g => g.approval_status === "pending" && (g.approved_by ?? []).includes(user.id));
+
   return (
     <>
       <ProgressBanner
         icon={<Target className="h-5 w-5 text-lavender-deep" />}
-        title={goals.length === 0 ? "What do you want to do together this month?" : `${completed} of ${goals.length} celebrated`}
-        subtitle={goals.length === 0 ? "Add your first shared goal below." : "Either of you can edit or mark complete — these belong to both of you."}
-        pct={pct}
+        title={accepted.length === 0 ? "What do you want to do together this month?" : `${accepted.filter(g=>g.is_complete).length} of ${accepted.length} celebrated`}
+        subtitle={accepted.length === 0 ? "Add your first shared goal below." : "Either of you can edit or mark complete — these belong to both of you."}
+        pct={accepted.length === 0 ? 0 : Math.round((accepted.filter(g=>g.is_complete).length / accepted.length) * 100)}
       />
+
+      {pendingForMe.length > 0 && (
+        <div className="mb-6 rounded-3xl border border-lavender-deep/30 bg-gradient-soft p-5 shadow-soft">
+          <p className="text-xs font-medium uppercase tracking-widest text-lavender-deep">Waiting for your approval</p>
+          <ul className="mt-3 space-y-2">
+            {pendingForMe.map(g => {
+              const proposer = profiles[g.proposed_by ?? g.created_by]?.display_name ?? "Partner";
+              return (
+                <li key={g.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+                  <div className="flex-1">
+                    <p className="font-display text-base font-semibold">{g.title}</p>
+                    {g.description && <p className="mt-0.5 text-sm text-muted-foreground">{g.description}</p>}
+                    <p className="mt-1 text-xs text-muted-foreground">Proposed by {proposer}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => approve(g)} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft">Accept</button>
+                    <button onClick={() => remove(g)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">Decline</button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       <ul className="space-y-3">
-        {goals.map((g) => {
+        {[...accepted, ...pendingMine].map((g) => {
           const creator = profiles[g.created_by]?.display_name ?? "Partner";
+          const isPending = g.approval_status === "pending";
           return (
             <GoalRow
               key={g.id}
@@ -271,8 +315,11 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
               isComplete={g.is_complete}
               meta={
                 <>
-                  <CalendarDays className="h-3 w-3" /> Added by {creator}
-                  {g.is_complete && g.completed_at && ` · Celebrated ${new Date(g.completed_at).toLocaleDateString()}`}
+                  {isPending ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-lavender-deep">Awaiting partner</span>
+                  ) : (
+                    <><CalendarDays className="h-3 w-3" /> Added by {creator}{g.is_complete && g.completed_at && ` · Celebrated ${new Date(g.completed_at).toLocaleDateString()}`}</>
+                  )}
                 </>
               }
               onToggle={() => toggle(g)}
