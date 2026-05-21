@@ -167,6 +167,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
 
   const accepted = useMemo(() => items.filter(i => i.approval_status === "accepted"), [items]);
   const pendingForMe = useMemo(() => items.filter(i => i.approval_status === "pending" && !(i.approved_by ?? []).includes(user.id)), [items, user.id]);
+  const pendingByMe = useMemo(() => items.filter(i => i.approval_status === "pending" && i.proposed_by === user.id), [items, user.id]);
 
   const enriched = useMemo(() => {
     return accepted
@@ -208,6 +209,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
               <p className="font-display text-3xl font-semibold leading-tight">{upcoming.it.title}</p>
               <p className="mt-1 text-sm opacity-90">
                 {upcoming.occ.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                {upcoming.it.event_time && ` · ${formatTime(upcoming.it.event_time)}`}
                 {upcoming.it.recurrence === "yearly" && yearsSince(upcoming.it.date, upcoming.occ) > 0 &&
                   ` · ${yearsSince(upcoming.it.date, upcoming.occ)} year${yearsSince(upcoming.it.date, upcoming.occ) === 1 ? "" : "s"}`}
               </p>
@@ -222,7 +224,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
         </div>
       )}
 
-      {/* Pending partner approval */}
+      {/* Pending partner approval (incoming) */}
       {pendingForMe.length > 0 && (
         <div className="mb-6 rounded-3xl border border-lavender-deep/30 bg-gradient-soft p-5 shadow-soft">
           <p className="text-xs font-medium uppercase tracking-widest text-lavender-deep">Waiting for your approval</p>
@@ -232,7 +234,9 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                 <div className="flex-1">
                   <p className="font-display text-base font-semibold">{it.title}</p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    {new Date(it.date + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })} · {CATEGORY_META[it.category].label}
+                    {new Date(it.date + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
+                    {it.event_time && ` · ${formatTime(it.event_time)}`}
+                    {` · ${CATEGORY_META[it.category].label}`}
                   </p>
                   {it.dress_code && <p className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1"><Shirt className="h-3 w-3" />{it.dress_code}</p>}
                 </div>
@@ -241,6 +245,18 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   <button onClick={() => remove(it.id)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">Decline</button>
                 </div>
               </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Pending — your proposals (editable) */}
+      {pendingByMe.length > 0 && (
+        <div className="mb-6 rounded-3xl border border-border bg-card/60 p-5 shadow-soft">
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Your proposals · awaiting partner</p>
+          <ul className="mt-3 space-y-2">
+            {pendingByMe.map(it => (
+              <EditableDateRow key={it.id} it={it} onRemove={() => remove(it.id)} />
             ))}
           </ul>
         </div>
