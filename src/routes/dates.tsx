@@ -442,6 +442,7 @@ function DateEditor({ it, onDone }: { it: ImportantDate; onDone: () => void }) {
 function AddDateForm({ user, partnership }: { user: { id: string }; partnership: Partnership }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState<Date | undefined>();
+  const [time, setTime] = useState("");
   const [category, setCategory] = useState<Category>("anniversary");
   const [recurrence, setRecurrence] = useState<Recurrence>("yearly");
   const [notes, setNotes] = useState("");
@@ -459,6 +460,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
       created_by: user.id,
       title: title.trim(),
       date: iso,
+      event_time: time || null,
       category,
       recurrence,
       notes: notes.trim() || null,
@@ -469,7 +471,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
     } as never);
     if (error) toast.error(error.message);
     else {
-      setTitle(""); setDate(undefined); setNotes(""); setDressCode("");
+      setTitle(""); setDate(undefined); setTime(""); setNotes(""); setDressCode("");
       setCategory("anniversary"); setRecurrence("yearly");
       toast.success("Sent for partner approval 💌");
     }
@@ -508,6 +510,16 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
             />
           </PopoverContent>
         </Popover>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5">
+        <Clock className="h-4 w-4 shrink-0 text-lavender-deep" />
+        <input
+          type="time" value={time} onChange={(e) => setTime(e.target.value)}
+          className="flex-1 bg-transparent text-sm focus:outline-none"
+          aria-label="Time (optional)"
+        />
+        <span className="text-xs text-muted-foreground">optional</span>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
