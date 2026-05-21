@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt } from "lucide-react";
+import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt, Clock, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,6 +24,7 @@ type ImportantDate = {
   created_by: string;
   title: string;
   date: string;
+  event_time: string | null;
   category: Category;
   recurrence: Recurrence;
   notes: string | null;
@@ -32,6 +33,14 @@ type ImportantDate = {
   proposed_by: string | null;
   approved_by: string[];
 };
+
+function formatTime(t: string | null) {
+  if (!t) return null;
+  const [h, m] = t.split(":");
+  const d = new Date();
+  d.setHours(Number(h), Number(m), 0, 0);
+  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
 
 function DatesPage() {
   const navigate = useNavigate();
