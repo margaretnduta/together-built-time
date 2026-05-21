@@ -1,0 +1,1 @@
+ALTER TABLE public.important_dates ADD COLUMN IF NOT EXISTS event_time time;

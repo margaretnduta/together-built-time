@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt } from "lucide-react";
+import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt, Clock, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,6 +24,7 @@ type ImportantDate = {
   created_by: string;
   title: string;
   date: string;
+  event_time: string | null;
   category: Category;
   recurrence: Recurrence;
   notes: string | null;
@@ -32,6 +33,14 @@ type ImportantDate = {
   proposed_by: string | null;
   approved_by: string[];
 };
+
+function formatTime(t: string | null) {
+  if (!t) return null;
+  const [h, m] = t.split(":");
+  const d = new Date();
+  d.setHours(Number(h), Number(m), 0, 0);
+  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
 
 function DatesPage() {
   const navigate = useNavigate();
@@ -158,6 +167,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
 
   const accepted = useMemo(() => items.filter(i => i.approval_status === "accepted"), [items]);
   const pendingForMe = useMemo(() => items.filter(i => i.approval_status === "pending" && !(i.approved_by ?? []).includes(user.id)), [items, user.id]);
+  const pendingByMe = useMemo(() => items.filter(i => i.approval_status === "pending" && i.proposed_by === user.id), [items, user.id]);
 
   const enriched = useMemo(() => {
     return accepted
@@ -199,6 +209,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
               <p className="font-display text-3xl font-semibold leading-tight">{upcoming.it.title}</p>
               <p className="mt-1 text-sm opacity-90">
                 {upcoming.occ.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                {upcoming.it.event_time && ` · ${formatTime(upcoming.it.event_time)}`}
                 {upcoming.it.recurrence === "yearly" && yearsSince(upcoming.it.date, upcoming.occ) > 0 &&
                   ` · ${yearsSince(upcoming.it.date, upcoming.occ)} year${yearsSince(upcoming.it.date, upcoming.occ) === 1 ? "" : "s"}`}
               </p>
@@ -213,7 +224,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
         </div>
       )}
 
-      {/* Pending partner approval */}
+      {/* Pending partner approval (incoming) */}
       {pendingForMe.length > 0 && (
         <div className="mb-6 rounded-3xl border border-lavender-deep/30 bg-gradient-soft p-5 shadow-soft">
           <p className="text-xs font-medium uppercase tracking-widest text-lavender-deep">Waiting for your approval</p>
@@ -223,7 +234,9 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                 <div className="flex-1">
                   <p className="font-display text-base font-semibold">{it.title}</p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    {new Date(it.date + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })} · {CATEGORY_META[it.category].label}
+                    {new Date(it.date + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
+                    {it.event_time && ` · ${formatTime(it.event_time)}`}
+                    {` · ${CATEGORY_META[it.category].label}`}
                   </p>
                   {it.dress_code && <p className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1"><Shirt className="h-3 w-3" />{it.dress_code}</p>}
                 </div>
@@ -232,6 +245,18 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   <button onClick={() => remove(it.id)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">Decline</button>
                 </div>
               </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Pending — your proposals (editable) */}
+      {pendingByMe.length > 0 && (
+        <div className="mb-6 rounded-3xl border border-border bg-card/60 p-5 shadow-soft">
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Your proposals · awaiting partner</p>
+          <ul className="mt-3 space-y-2">
+            {pendingByMe.map(it => (
+              <EditableDateRow key={it.id} it={it} onRemove={() => remove(it.id)} />
             ))}
           </ul>
         </div>
@@ -271,6 +296,7 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {occ.toLocaleDateString(undefined, { weekday: "short", month: "long", day: "numeric", year: "numeric" })}
+                    {it.event_time && ` · ${formatTime(it.event_time)}`}
                     {years > 0 && ` · ${years} year${years === 1 ? "" : "s"}`}
                   </p>
                   {it.dress_code && (
@@ -289,9 +315,12 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   )}>
                     {countdownLabel(days)}
                   </span>
-                  <button onClick={() => remove(it.id)} className="opacity-0 transition group-hover:opacity-100" aria-label="Delete">
-                    <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                  </button>
+                  <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                    <EditDateButton it={it} />
+                    <button onClick={() => remove(it.id)} aria-label="Delete">
+                      <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </li>
@@ -302,9 +331,118 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
   );
 }
 
+// =========== Inline editable row for the proposer's pending dates ===========
+function EditableDateRow({ it, onRemove }: { it: ImportantDate; onRemove: () => void }) {
+  const [editing, setEditing] = useState(false);
+  return (
+    <li className="rounded-2xl border border-border bg-card p-4">
+      {editing ? (
+        <DateEditor it={it} onDone={() => setEditing(false)} />
+      ) : (
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <p className="font-display text-base font-semibold">{it.title}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {new Date(it.date + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
+              {it.event_time && ` · ${formatTime(it.event_time)}`}
+              {` · ${CATEGORY_META[it.category].label}`}
+            </p>
+            {it.dress_code && <p className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1"><Shirt className="h-3 w-3" />{it.dress_code}</p>}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(true)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-secondary">
+              <Pencil className="inline h-3 w-3 mr-1" />Edit
+            </button>
+            <button onClick={onRemove} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">
+              Withdraw
+            </button>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
+// Compact button that opens an inline editor in a popover-like dialog
+function EditDateButton({ it }: { it: ImportantDate }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button aria-label="Edit date"><Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" /></button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80">
+        <DateEditor it={it} onDone={() => setOpen(false)} />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function DateEditor({ it, onDone }: { it: ImportantDate; onDone: () => void }) {
+  const [title, setTitle] = useState(it.title);
+  const [date, setDate] = useState<Date | undefined>(new Date(it.date + "T00:00:00"));
+  const [time, setTime] = useState<string>(it.event_time?.slice(0, 5) ?? "");
+  const [dressCode, setDressCode] = useState(it.dress_code ?? "");
+  const [busy, setBusy] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
+
+  async function save() {
+    if (!title.trim() || !date) return;
+    setBusy(true);
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const { error } = await supabase.from("important_dates").update({
+      title: title.trim(),
+      date: iso,
+      event_time: time || null,
+      dress_code: dressCode.trim() || null,
+    } as never).eq("id", it.id);
+    setBusy(false);
+    if (error) toast.error(error.message);
+    else { toast.success("Updated"); onDone(); }
+  }
+
+  return (
+    <div className="space-y-2">
+      <input
+        type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+        maxLength={120}
+        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-none"
+      />
+      <div className="grid grid-cols-2 gap-2">
+        <Popover open={calOpen} onOpenChange={setCalOpen}>
+          <PopoverTrigger asChild>
+            <button type="button" className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {date ? date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Date"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={date} onSelect={(d) => { setDate(d); setCalOpen(false); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+          </PopoverContent>
+        </Popover>
+        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs">
+          <Clock className="h-3.5 w-3.5 shrink-0 text-lavender-deep" />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="flex-1 bg-transparent text-xs focus:outline-none" />
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2">
+        <Shirt className="h-3.5 w-3.5 shrink-0 text-lavender-deep" />
+        <input type="text" value={dressCode} onChange={(e) => setDressCode(e.target.value)} placeholder="Dress code (optional)" maxLength={200} className="flex-1 bg-transparent text-xs focus:outline-none" />
+      </div>
+      <div className="flex justify-end gap-2 pt-1">
+        <button onClick={onDone} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs">Cancel</button>
+        <button onClick={save} disabled={busy} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft disabled:opacity-60">
+          {busy ? <Loader2 className="inline h-3 w-3 animate-spin" /> : <Check className="inline h-3 w-3 mr-1" />}Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AddDateForm({ user, partnership }: { user: { id: string }; partnership: Partnership }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState<Date | undefined>();
+  const [time, setTime] = useState("");
   const [category, setCategory] = useState<Category>("anniversary");
   const [recurrence, setRecurrence] = useState<Recurrence>("yearly");
   const [notes, setNotes] = useState("");
@@ -322,6 +460,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
       created_by: user.id,
       title: title.trim(),
       date: iso,
+      event_time: time || null,
       category,
       recurrence,
       notes: notes.trim() || null,
@@ -332,7 +471,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
     } as never);
     if (error) toast.error(error.message);
     else {
-      setTitle(""); setDate(undefined); setNotes(""); setDressCode("");
+      setTitle(""); setDate(undefined); setTime(""); setNotes(""); setDressCode("");
       setCategory("anniversary"); setRecurrence("yearly");
       toast.success("Sent for partner approval 💌");
     }
@@ -371,6 +510,16 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
             />
           </PopoverContent>
         </Popover>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5">
+        <Clock className="h-4 w-4 shrink-0 text-lavender-deep" />
+        <input
+          type="time" value={time} onChange={(e) => setTime(e.target.value)}
+          className="flex-1 bg-transparent text-sm focus:outline-none"
+          aria-label="Time (optional)"
+        />
+        <span className="text-xs text-muted-foreground">optional</span>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">

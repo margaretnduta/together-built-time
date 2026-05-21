@@ -200,6 +200,7 @@ export type Database = {
           created_by: string
           date: string
           dress_code: string | null
+          event_time: string | null
           id: string
           notes: string | null
           partnership_id: string
@@ -216,6 +217,7 @@ export type Database = {
           created_by: string
           date: string
           dress_code?: string | null
+          event_time?: string | null
           id?: string
           notes?: string | null
           partnership_id: string
@@ -232,6 +234,7 @@ export type Database = {
           created_by?: string
           date?: string
           dress_code?: string | null
+          event_time?: string | null
           id?: string
           notes?: string | null
           partnership_id?: string

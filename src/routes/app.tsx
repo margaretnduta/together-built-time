@@ -391,14 +391,33 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
   const myName = profiles[user.id]?.display_name ?? "You";
   const dateLabel = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
+  // Partnership days counter
+  const daysTogether = useMemo(() => {
+    if (!partnership.formed_at) return null;
+    const start = new Date(partnership.formed_at);
+    start.setHours(0, 0, 0, 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.round((today.getTime() - start.getTime()) / 86400000)) + 1;
+  }, [partnership.formed_at]);
+
+  const combinedPct = Math.round((myPct + partnerPct) / 2);
+
   return (
     <div>
       <StreakBar userId={user.id} partnershipId={partnership.id} />
-      <div className="mb-8 flex items-end justify-between">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">{dateLabel}</p>
           <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">Today</h1>
         </div>
+        {daysTogether !== null && (
+          <div className="rounded-2xl border border-border bg-card px-4 py-2 text-right shadow-soft">
+            <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Together</p>
+            <p className="font-display text-2xl font-semibold text-lavender-deep">
+              {daysTogether} <span className="text-sm text-muted-foreground">day{daysTogether === 1 ? "" : "s"}</span>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Engagement banner */}
@@ -425,7 +444,16 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
               ? `You've both shown up today. Go connect with ${partnerName}.`
               : `Complete your tasks to unlock time with ${partnerName}.`}
           </p>
+          <div className={`mt-3 h-1.5 overflow-hidden rounded-full ${bothReady ? "bg-white/20" : "bg-secondary"}`}>
+            <div
+              className={`h-full transition-all duration-500 ${bothReady ? "bg-white" : "bg-gradient-primary"}`}
+              style={{ width: `${combinedPct}%` }}
+            />
+          </div>
         </div>
+        <p className={`font-display text-2xl font-semibold ${bothReady ? "" : "text-lavender-deep"}`}>
+          {combinedPct}%
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -514,9 +542,12 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
         {/* Partner panel */}
         <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
           <PanelHeader name={partnerName} pct={partnerPct} />
-          <ul className="mt-5 space-y-2">
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Tasks are blurred to keep your focus — hover to peek.
+          </p>
+          <ul className="mt-3 space-y-2">
             {partnerTasks.map((t) => (
-              <li key={t.id} className="flex items-center gap-3 rounded-xl p-2">
+              <li key={t.id} className="group flex items-center gap-3 rounded-xl p-2">
                 <div
                   className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
                     t.is_complete ? "border-lavender-deep bg-lavender-deep" : "border-border"
@@ -528,7 +559,12 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
                     <Circle className="h-2 w-2 text-muted-foreground" />
                   )}
                 </div>
-                <span className={`flex-1 text-sm ${t.is_complete ? "text-muted-foreground" : "text-foreground"}`}>
+                <span
+                  className={`flex-1 select-none text-sm blur-[5px] transition group-hover:blur-0 ${
+                    t.is_complete ? "text-muted-foreground" : "text-foreground"
+                  }`}
+                  aria-label="Partner task (blurred for focus)"
+                >
                   {t.title}
                 </span>
               </li>
