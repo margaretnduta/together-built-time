@@ -542,9 +542,12 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
         {/* Partner panel */}
         <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
           <PanelHeader name={partnerName} pct={partnerPct} />
-          <ul className="mt-5 space-y-2">
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Tasks are blurred to keep your focus — hover to peek.
+          </p>
+          <ul className="mt-3 space-y-2">
             {partnerTasks.map((t) => (
-              <li key={t.id} className="flex items-center gap-3 rounded-xl p-2">
+              <li key={t.id} className="group flex items-center gap-3 rounded-xl p-2">
                 <div
                   className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
                     t.is_complete ? "border-lavender-deep bg-lavender-deep" : "border-border"
@@ -556,7 +559,12 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
                     <Circle className="h-2 w-2 text-muted-foreground" />
                   )}
                 </div>
-                <span className={`flex-1 text-sm ${t.is_complete ? "text-muted-foreground" : "text-foreground"}`}>
+                <span
+                  className={`flex-1 select-none text-sm blur-[5px] transition group-hover:blur-0 ${
+                    t.is_complete ? "text-muted-foreground" : "text-foreground"
+                  }`}
+                  aria-label="Partner task (blurred for focus)"
+                >
                   {t.title}
                 </span>
               </li>
