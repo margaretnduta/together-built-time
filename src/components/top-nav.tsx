@@ -9,6 +9,7 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 interface TopNavProps {
   onSignOut: () => void;
@@ -33,7 +34,45 @@ export function TopNav({ onSignOut }: TopNavProps) {
   return (
     <header className="border-b border-border bg-card/60 backdrop-blur">
       <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
-        {/* Mobile hamburger */}
+        <Link
+          to="/"
+          className="flex shrink-0 items-center gap-2 font-display text-base font-semibold sm:text-lg"
+          aria-label="TwoGether home"
+        >
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
+            <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
+          </div>
+          <span className="hidden sm:inline">TwoGether</span>
+        </Link>
+
+        {/* Desktop nav */}
+        <nav className="ml-2 hidden min-w-0 flex-1 items-center gap-1 md:flex">
+          {links.map((l) => (
+            <Link
+              key={l.to}
+              to={l.to}
+              className={linkBase}
+              activeProps={{ className: linkActive }}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex-1 md:hidden" />
+
+        {/* Notifications bell - visible on all sizes */}
+        <NotificationsBell />
+
+        <button
+          onClick={onSignOut}
+          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground md:flex"
+          aria-label="Sign out"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+
+        {/* Mobile hamburger — now on the right */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <button
@@ -43,7 +82,7 @@ export function TopNav({ onSignOut }: TopNavProps) {
               <Menu className="h-5 w-5" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0">
+          <SheetContent side="right" className="w-72 p-0">
             <SheetHeader className="border-b border-border p-6">
               <SheetTitle className="flex items-center gap-2 font-display text-lg">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
@@ -75,41 +114,6 @@ export function TopNav({ onSignOut }: TopNavProps) {
             </div>
           </SheetContent>
         </Sheet>
-
-        <Link
-          to="/"
-          className="flex shrink-0 items-center gap-2 font-display text-base font-semibold sm:text-lg"
-          aria-label="TwoGether home"
-        >
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
-            <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
-          </div>
-          <span className="hidden sm:inline">TwoGether</span>
-        </Link>
-
-        {/* Desktop nav */}
-        <nav className="ml-2 hidden min-w-0 flex-1 items-center gap-1 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className={linkBase}
-              activeProps={{ className: linkActive }}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex-1 md:hidden" />
-
-        <button
-          onClick={onSignOut}
-          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground md:flex"
-          aria-label="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
       </div>
     </header>
   );
