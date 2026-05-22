@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Check, Plus, X, Loader2, Target, Sparkles, CalendarDays, Users, Lock } from "lucide-react";
+import { Check, Plus, X, Loader2, Target, Sparkles, CalendarDays, Users, Lock, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { CelebrationInbox } from "@/components/celebration-inbox";
@@ -256,6 +256,16 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
     else if (!g.is_complete) toast.success("Goal celebrated 🎉");
   }
   async function remove(g: Goal) { await supabase.from("couple_goals").delete().eq("id", g.id); }
+  async function editGoal(g: Goal, title: string, description: string | null) {
+    const t = title.trim();
+    if (!t) return;
+    const { error } = await supabase.from("couple_goals")
+      .update({ title: t, description } as never)
+      .eq("id", g.id);
+    if (error) toast.error(error.message);
+    else toast.success("Goal updated");
+  }
+
 
   async function approve(g: Goal) {
     const next = Array.from(new Set([...(g.approved_by ?? []), user.id]));
