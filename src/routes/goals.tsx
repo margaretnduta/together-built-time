@@ -398,6 +398,15 @@ function PersonalPanel({ user, month }: { user: { id: string }; month: string })
     if (error) toast.error(error.message);
   }
   async function remove(g: PersonalGoal) { await supabase.from("personal_goals").delete().eq("id", g.id); }
+  async function editGoal(g: PersonalGoal, t: string, d: string | null) {
+    const title = t.trim();
+    if (!title) return;
+    const { error } = await supabase.from("personal_goals")
+      .update({ title, description: d } as never).eq("id", g.id);
+    if (error) toast.error(error.message);
+    else toast.success("Goal updated");
+  }
+
 
   return (
     <>
@@ -422,7 +431,9 @@ function PersonalPanel({ user, month }: { user: { id: string }; month: string })
             }
             onToggle={() => toggle(g)}
             onDelete={() => remove(g)}
+            onEdit={(t, d) => editGoal(g, t, d)}
           />
+
         ))}
       </ul>
       <AddGoalForm
@@ -457,7 +468,7 @@ function ProgressBanner({ icon, title, subtitle, pct }: { icon: React.ReactNode;
 }
 
 function GoalRow({
-  title, description, isComplete, meta, onToggle, onDelete,
+  title, description, isComplete, meta, onToggle, onDelete, onEdit,
 }: {
   title: string;
   description: string | null;
@@ -465,7 +476,20 @@ function GoalRow({
   meta: React.ReactNode;
   onToggle: () => void;
   onDelete: () => void;
+  onEdit?: (title: string, description: string | null) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(title);
+  const [draftDesc, setDraftDesc] = useState(description ?? "");
+
+  useEffect(() => { setDraftTitle(title); setDraftDesc(description ?? ""); }, [title, description]);
+
+  function commit() {
+    if (!onEdit) { setEditing(false); return; }
+    onEdit(draftTitle, draftDesc.trim() || null);
+    setEditing(false);
+  }
+
   return (
     <li className={`group rounded-2xl border p-5 shadow-soft transition ${
       isComplete ? "border-lavender-deep/30 bg-gradient-soft" : "border-border bg-card"
@@ -480,17 +504,50 @@ function GoalRow({
           {isComplete && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
         </button>
         <div className="flex-1">
-          <p className={`font-display text-lg font-semibold ${isComplete ? "text-muted-foreground line-through" : ""}`}>{title}</p>
-          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">{meta}</p>
+          {editing ? (
+            <div className="space-y-2">
+              <input
+                autoFocus value={draftTitle}
+                onChange={(e) => setDraftTitle(e.target.value)}
+                maxLength={200}
+                className="w-full rounded-md border border-border bg-background px-3 py-1.5 font-display text-base font-semibold focus:border-ring focus:outline-none"
+              />
+              <textarea
+                value={draftDesc} rows={2} maxLength={500}
+                onChange={(e) => setDraftDesc(e.target.value)}
+                placeholder="Details (optional)"
+                className="w-full resize-none rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-ring focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <button onClick={commit} className="rounded-full bg-gradient-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-soft">Save</button>
+                <button onClick={() => { setDraftTitle(title); setDraftDesc(description ?? ""); setEditing(false); }} className="rounded-full border border-border bg-background px-3 py-1 text-xs">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className={`font-display text-lg font-semibold ${isComplete ? "text-muted-foreground line-through" : ""}`}>{title}</p>
+              {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">{meta}</p>
+            </>
+          )}
         </div>
-        <button onClick={onDelete} className="opacity-0 transition group-hover:opacity-100" aria-label="Delete goal">
-          <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-        </button>
+        {!editing && (
+          <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+            {onEdit && (
+              <button onClick={() => setEditing(true)} aria-label="Edit goal">
+                <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+            <button onClick={onDelete} aria-label="Delete goal">
+              <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+            </button>
+          </div>
+        )}
       </div>
     </li>
   );
 }
+
 
 function AddGoalForm({
   atLimit, limit, count, title, setTitle, desc, setDesc, busy, onSubmit, placeholder, limitMessage,
