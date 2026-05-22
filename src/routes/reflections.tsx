@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Sparkles, Lock, Check, BookOpen } from "lucide-react";
+import { Loader2, Sparkles, Lock, Check, BookOpen, Pencil, Eye, EyeOff } from "lucide-react";
 import { StreakBar } from "@/components/streak-bar";
 import { toast } from "sonner";
 
@@ -28,7 +28,9 @@ type Reflection = {
   was_hard: string | null;
   appreciation_for_partner: string | null;
   submitted_at: string | null;
+  visibility: "private" | "shared";
 };
+
 
 type Profile = { id: string; display_name: string };
 
