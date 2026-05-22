@@ -738,7 +738,81 @@ function ManagePartnership({ partnerName }: { partnerName: string }) {
   );
 }
 
+function EditableTaskRow({
+  task, onToggle, onDelete, onRename,
+}: {
+  task: Task;
+  onToggle: () => void;
+  onDelete: () => void;
+  onRename: (title: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(task.title);
+
+  useEffect(() => { setDraft(task.title); }, [task.title]);
+
+  function commit() {
+    setEditing(false);
+    if (draft.trim() && draft.trim() !== task.title) onRename(draft);
+    else setDraft(task.title);
+  }
+
+  return (
+    <li className="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-secondary/50">
+      <button
+        onClick={onToggle}
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
+          task.is_complete ? "border-lavender-deep bg-lavender-deep" : "border-border hover:border-lavender-deep"
+        }`}
+        aria-label={task.is_complete ? "Mark incomplete" : "Mark complete"}
+      >
+        {task.is_complete && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
+      </button>
+
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); commit(); }
+            if (e.key === "Escape") { setDraft(task.title); setEditing(false); }
+          }}
+          maxLength={200}
+          className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-sm focus:border-ring focus:outline-none"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className={`flex-1 text-left text-sm ${task.is_complete ? "text-muted-foreground line-through" : "text-foreground"}`}
+          title="Click to edit"
+        >
+          {task.title}
+        </button>
+      )}
+
+      <button
+        onClick={() => setEditing((v) => !v)}
+        className="opacity-0 transition group-hover:opacity-100"
+        aria-label="Edit task"
+      >
+        <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+      </button>
+      <button
+        onClick={onDelete}
+        className="opacity-0 transition group-hover:opacity-100"
+        aria-label="Delete task"
+      >
+        <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+      </button>
+    </li>
+  );
+}
+
 function PanelHeader({ name, pct, isMe }: { name: string; pct: number; isMe?: boolean }) {
+
   return (
     <div className="flex items-center justify-between">
       <div>
