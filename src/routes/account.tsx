@@ -3,9 +3,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, Save, ShieldCheck, KeyRound, Mail, User, Phone, History, Camera, Trash2 } from "lucide-react";
+import { Loader2, Save, ShieldCheck, KeyRound, Mail, User, Phone, History, Camera, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteMyAccount } from "@/lib/account.functions";
+
 
 export const Route = createFileRoute("/account")({
   head: () => ({ meta: [{ title: "Account — TwoGether" }] }),
@@ -110,10 +113,12 @@ function AccountPage() {
         <PasswordCard email={user.email ?? ""} />
         <SignOutEverywhereCard onAfterSignOut={() => navigate({ to: "/auth" })} />
         <AuditLogCard userId={user.id} />
+        <DeleteAccountCard onDeleted={() => navigate({ to: "/" })} />
       </div>
     </main>
   );
 }
+
 
 // =================== PROFILE ===================
 function ProfileCard({ userId }: { userId: string }) {
