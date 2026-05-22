@@ -332,7 +332,9 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
               }
               onToggle={() => toggle(g)}
               onDelete={() => remove(g)}
+              onEdit={(t, d) => editGoal(g, t, d)}
             />
+
           );
         })}
       </ul>
