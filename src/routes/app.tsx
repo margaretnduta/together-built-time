@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles, Repeat, Trash2 } from "lucide-react";
+import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles, Repeat, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import {
@@ -386,6 +386,18 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
   async function deleteTask(t: Task) {
     await supabase.from("daily_tasks").delete().eq("id", t.id);
   }
+
+  async function renameTask(t: Task, newTitle: string) {
+    const title = newTitle.trim();
+    if (!title || title === t.title) return;
+    const { error } = await supabase
+      .from("daily_tasks")
+      .update({ title } as never)
+      .eq("id", t.id);
+    if (error) toast.error(error.message);
+    else toast.success("Task updated");
+  }
+
 
   const partnerName = profiles[partnerId]?.display_name ?? "Partner";
   const myName = profiles[user.id]?.display_name ?? "You";
