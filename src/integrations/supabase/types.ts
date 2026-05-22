@@ -401,6 +401,7 @@ export type Database = {
           partnership_id: string
           submitted_at: string | null
           updated_at: string
+          visibility: string
           was_hard: string | null
           week_start: string
           went_well: string | null
@@ -413,6 +414,7 @@ export type Database = {
           partnership_id: string
           submitted_at?: string | null
           updated_at?: string
+          visibility?: string
           was_hard?: string | null
           week_start: string
           went_well?: string | null
@@ -425,6 +427,7 @@ export type Database = {
           partnership_id?: string
           submitted_at?: string | null
           updated_at?: string
+          visibility?: string
           was_hard?: string | null
           week_start?: string
           went_well?: string | null
@@ -437,6 +440,7 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { _code: string }; Returns: string }
+      delete_my_account_data: { Args: never; Returns: undefined }
       dissolve_partnership: { Args: never; Returns: string }
       get_daily_streak: { Args: { _partnership_id: string }; Returns: number }
       get_monthly_couple_streak: {
