@@ -474,30 +474,15 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
           <PanelHeader name={myName} pct={myPct} isMe />
           <ul className="mt-5 space-y-2">
             {myTasks.map((t) => (
-              <li
+              <EditableTaskRow
                 key={t.id}
-                className="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-secondary/50"
-              >
-                <button
-                  onClick={() => toggleTask(t)}
-                  className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition ${
-                    t.is_complete ? "border-lavender-deep bg-lavender-deep" : "border-border hover:border-lavender-deep"
-                  }`}
-                >
-                  {t.is_complete && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
-                </button>
-                <span className={`flex-1 text-sm ${t.is_complete ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                  {t.title}
-                </span>
-                <button
-                  onClick={() => deleteTask(t)}
-                  className="opacity-0 transition group-hover:opacity-100"
-                  aria-label="Delete task"
-                >
-                  <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                </button>
-              </li>
+                task={t}
+                onToggle={() => toggleTask(t)}
+                onDelete={() => deleteTask(t)}
+                onRename={(title) => renameTask(t, title)}
+              />
             ))}
+
             {myTasks.length === 0 && (
               <li className="rounded-xl bg-secondary/30 p-4 text-center text-sm text-muted-foreground">
                 A rest day is valid. Or add what you're working on.
