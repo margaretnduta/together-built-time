@@ -20,8 +20,8 @@ type Partnership = {
   status: "pending" | "active" | "dissolved";
 };
 type Task = { id: string; owner_id: string; task_date: string; title: string; is_complete: boolean };
-type Goal = { id: string; created_by: string; title: string; description: string | null; is_complete: boolean; completed_at: string | null; month_start: string; approval_status?: string | null };
-type PersonalGoal = { id: string; title: string; is_complete: boolean; completed_at: string | null; month_start: string };
+type Goal = { id: string; created_by: string; title: string; description: string | null; is_complete: boolean; completed_at: string | null; month: string; approval_status?: string | null };
+type PersonalGoal = { id: string; title: string; is_complete: boolean; completed_at: string | null; month: string };
 
 function toISO(d: Date) { return d.toISOString().slice(0, 10); }
 function monthStart(d: Date) { return toISO(new Date(d.getFullYear(), d.getMonth(), 1)); }
@@ -91,18 +91,18 @@ function HistoryPage() {
     if (partnership) {
       const { data: gData } = await supabase
         .from("couple_goals")
-        .select("id, created_by, title, description, is_complete, completed_at, month_start, approval_status")
+        .select("id, created_by, title, description, is_complete, completed_at, month, approval_status")
         .eq("partnership_id", partnership.id)
-        .eq("month_start", mStart);
+        .eq("month", mStart);
       setGoals((gData as Goal[] | null) ?? []);
     } else setGoals([]);
 
     // personal goals for selected month (mine only)
     const { data: pgData } = await supabase
       .from("personal_goals")
-      .select("id, title, is_complete, completed_at, month_start")
+      .select("id, title, is_complete, completed_at, month")
       .eq("owner_id", user.id)
-      .eq("month_start", mStart);
+      .eq("month", mStart);
     setPersonals((pgData as PersonalGoal[] | null) ?? []);
 
     // calendar dots: dates in the visible cursor month where all tasks complete
