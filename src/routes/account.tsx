@@ -3,9 +3,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, Save, ShieldCheck, KeyRound, Mail, User, Phone, History, Camera, Trash2 } from "lucide-react";
+import { Loader2, Save, ShieldCheck, KeyRound, Mail, User, Phone, History, Camera, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteMyAccount } from "@/lib/account.functions";
+
 
 export const Route = createFileRoute("/account")({
   head: () => ({ meta: [{ title: "Account — TwoGether" }] }),
@@ -110,10 +113,12 @@ function AccountPage() {
         <PasswordCard email={user.email ?? ""} />
         <SignOutEverywhereCard onAfterSignOut={() => navigate({ to: "/auth" })} />
         <AuditLogCard userId={user.id} />
+        <DeleteAccountCard onDeleted={() => navigate({ to: "/" })} />
       </div>
     </main>
   );
 }
+
 
 // =================== PROFILE ===================
 function ProfileCard({ userId }: { userId: string }) {
@@ -662,7 +667,81 @@ function AuditLogCard({ userId }: { userId: string }) {
   );
 }
 
+// =================== DELETE ACCOUNT ===================
+function DeleteAccountCard({ onDeleted }: { onDeleted: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const deleteFn = useServerFn(deleteMyAccount);
+
+  async function run() {
+    setBusy(true);
+    try {
+      await deleteFn({});
+      // Sign out locally — the auth row is already gone server-side.
+      await supabase.auth.signOut().catch(() => {});
+      toast.success("Account deleted. Take care of yourself.");
+      onDeleted();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Could not delete account";
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Section
+      icon={<AlertTriangle className="h-4 w-4" />}
+      title="Delete account"
+      description="Permanently remove your account. This ends any partnership and resets your partner to a fresh start. This cannot be undone."
+      highRisk
+    >
+      <div className="flex justify-end">
+        <button
+          onClick={() => { setConfirmText(""); setOpen(true); }}
+          disabled={busy}
+          className="inline-flex items-center gap-2 rounded-full border border-destructive/40 bg-destructive/5 px-4 py-2 text-sm font-semibold text-destructive transition hover:bg-destructive/10 disabled:opacity-60"
+        >
+          <Trash2 className="h-4 w-4" /> Delete my account
+        </button>
+      </div>
+
+      {open && (
+        <ConfirmDialog
+          title="Delete your account?"
+          body={
+            <div className="space-y-3">
+              <p>
+                This will permanently remove your profile, tasks, goals, reflections,
+                and dates. If you have a partner, your partnership will end and they will
+                be returned to the invite screen.
+              </p>
+              <p>
+                Type <strong>DELETE</strong> below to confirm.
+              </p>
+              <input
+                autoFocus
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="DELETE"
+                className={inputCls}
+              />
+            </div>
+          }
+          confirmLabel={busy ? "Deleting…" : "Yes, delete forever"}
+          busy={busy || confirmText.trim() !== "DELETE"}
+          onCancel={() => { if (!busy) setOpen(false); }}
+          onConfirm={run}
+        />
+      )}
+    </Section>
+  );
+}
+
 // =================== SHARED UI ===================
+
 const inputCls =
   "w-full rounded-xl border border-border bg-background px-3 py-2 text-base focus:border-ring focus:outline-none";
 const primaryBtn =

@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Sparkles, Lock, Check, BookOpen } from "lucide-react";
+import { Loader2, Sparkles, Lock, Check, BookOpen, Pencil, Eye, EyeOff } from "lucide-react";
 import { StreakBar } from "@/components/streak-bar";
 import { toast } from "sonner";
 
@@ -28,7 +28,9 @@ type Reflection = {
   was_hard: string | null;
   appreciation_for_partner: string | null;
   submitted_at: string | null;
+  visibility: "private" | "shared";
 };
+
 
 type Profile = { id: string; display_name: string };
 
@@ -250,118 +252,150 @@ function MyReflectionCard({
   const [wentWell, setWentWell] = useState("");
   const [wasHard, setWasHard] = useState("");
   const [appreciation, setAppreciation] = useState("");
+  const [visibility, setVisibility] = useState<"private" | "shared">("shared");
+  const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setWentWell(reflection?.went_well ?? "");
     setWasHard(reflection?.was_hard ?? "");
     setAppreciation(reflection?.appreciation_for_partner ?? "");
+    setVisibility(reflection?.visibility ?? "shared");
+    setEditing(false);
   }, [reflection]);
 
   const submitted = !!reflection?.submitted_at;
   const canSubmit = wentWell.trim() || wasHard.trim() || appreciation.trim();
 
-  async function saveDraft() {
+  // Saturday gate (locally): allow writing only on Saturdays, for the current week.
+  const today = new Date();
+  const isSaturday = today.getDay() === 6;
+  const isCurrentWeek = week === weekISO();
+  const writeAllowed = isSaturday && isCurrentWeek;
+  const locked = !writeAllowed && !submitted;
+  const inputsDisabled = (submitted && !editing) || locked;
+
+  async function persist(opts: { submit?: boolean; vis?: "private" | "shared" } = {}) {
     setBusy(true);
-    const payload = {
+    const payload: Record<string, unknown> = {
       partnership_id: partnership.id,
       owner_id: user.id,
       week_start: week,
       went_well: wentWell.trim() || null,
       was_hard: wasHard.trim() || null,
       appreciation_for_partner: appreciation.trim() || null,
+      visibility: opts.vis ?? visibility,
     };
+    if (opts.submit) payload.submitted_at = new Date().toISOString();
     const { error } = await supabase.from("weekly_reflections").upsert(payload as never, {
       onConflict: "partnership_id,week_start,owner_id",
     });
     if (error) toast.error(error.message);
-    else { toast.success("Draft saved."); onChanged(); }
+    else {
+      if (opts.submit) toast.success("Submitted.");
+      else if (opts.vis) toast.success(opts.vis === "shared" ? "Now shared with partner." : "Now private.");
+      else toast.success("Saved.");
+      onChanged();
+      setEditing(false);
+    }
     setBusy(false);
   }
 
-  async function submit() {
-    if (!canSubmit) return;
-    setBusy(true);
-    const payload = {
-      partnership_id: partnership.id,
-      owner_id: user.id,
-      week_start: week,
-      went_well: wentWell.trim() || null,
-      was_hard: wasHard.trim() || null,
-      appreciation_for_partner: appreciation.trim() || null,
-      submitted_at: new Date().toISOString(),
-    };
-    const { error } = await supabase.from("weekly_reflections").upsert(payload as never, {
-      onConflict: "partnership_id,week_start,owner_id",
-    });
-    if (error) toast.error(error.message);
-    else { toast.success("Submitted. Locked in."); onChanged(); }
-    setBusy(false);
+  async function toggleVisibility() {
+    const next = visibility === "shared" ? "private" : "shared";
+    setVisibility(next);
+    await persist({ vis: next });
   }
 
   return (
     <section className={`rounded-3xl border p-6 shadow-soft ${submitted ? "border-lavender-deep/30 bg-gradient-soft" : "border-border bg-card"}`}>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">You</p>
           <h2 className="mt-0.5 font-display text-xl font-semibold">{myName}</h2>
         </div>
-        {submitted && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-lavender-deep px-3 py-1 text-xs font-semibold text-primary-foreground">
-            <Check className="h-3 w-3" strokeWidth={3} /> Submitted
-          </span>
-        )}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {submitted && (
+            <button
+              onClick={toggleVisibility}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-semibold transition hover:bg-secondary disabled:opacity-60"
+              title={visibility === "shared" ? "Shared with partner — click to make private" : "Private — click to share"}
+            >
+              {visibility === "shared" ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+              {visibility === "shared" ? "Shared" : "Private"}
+            </button>
+          )}
+          {submitted && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-lavender-deep px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">
+              <Check className="h-3 w-3" strokeWidth={3} /> Submitted
+            </span>
+          )}
+        </div>
       </div>
 
-      <Field
-        label="What went well this week?"
-        value={wentWell}
-        onChange={setWentWell}
-        disabled={submitted}
-        placeholder="A win, a moment, a small joy…"
-      />
-      <Field
-        label="What was hard?"
-        value={wasHard}
-        onChange={setWasHard}
-        disabled={submitted}
-        placeholder="Be honest. This is for both of you."
-      />
-      <Field
-        label="One thing you appreciated about your partner"
-        value={appreciation}
-        onChange={setAppreciation}
-        disabled={submitted}
-        placeholder="Something specific. They'll see it."
-      />
+      {locked && (
+        <div className="mb-4 rounded-2xl border border-dashed border-border bg-secondary/40 p-4 text-sm">
+          <p className="font-semibold">Reflections open on Saturdays.</p>
+          <p className="mt-1 text-muted-foreground">
+            {isCurrentWeek
+              ? "Come back this Saturday to write your weekly reflection."
+              : "You can only write reflections during the current week, on Saturday."}
+          </p>
+        </div>
+      )}
 
-      {!submitted && (
+      <Field label="What went well this week?" value={wentWell} onChange={setWentWell} disabled={inputsDisabled} placeholder="A win, a moment, a small joy…" />
+      <Field label="What was hard?" value={wasHard} onChange={setWasHard} disabled={inputsDisabled} placeholder="Be honest. This is for both of you." />
+      <Field label="One thing you appreciated about your partner" value={appreciation} onChange={setAppreciation} disabled={inputsDisabled} placeholder="Something specific. They'll see it." />
+
+      {!submitted && writeAllowed && (
         <div className="mt-5 flex flex-wrap gap-2">
           <button
-            onClick={submit}
+            onClick={() => persist({ submit: true })}
             disabled={busy || !canSubmit}
             className="flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Submit reflection
           </button>
-          <button
-            onClick={saveDraft}
-            disabled={busy}
-            className="rounded-full border border-border bg-secondary px-5 py-2.5 text-sm font-medium transition hover:bg-accent disabled:opacity-60"
-          >
+          <button onClick={() => persist()} disabled={busy} className="rounded-full border border-border bg-secondary px-5 py-2.5 text-sm font-medium transition hover:bg-accent disabled:opacity-60">
             Save draft
           </button>
+          <label className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <input type="checkbox" checked={visibility === "shared"} onChange={(e) => setVisibility(e.target.checked ? "shared" : "private")} className="h-3.5 w-3.5" />
+            Share with partner after both submit
+          </label>
         </div>
       )}
-      {submitted && (
-        <p className="mt-4 text-xs text-muted-foreground">
-          Locked in. Reflections are final once submitted — that's the point.
-        </p>
+
+      {submitted && !editing && (
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:bg-secondary"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </button>
+          <p className="text-xs text-muted-foreground">You can refine your words — submission timestamp is preserved.</p>
+        </div>
+      )}
+
+      {submitted && editing && (
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button onClick={() => persist()} disabled={busy} className="flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Save changes
+          </button>
+          <button onClick={() => { setEditing(false); setWentWell(reflection?.went_well ?? ""); setWasHard(reflection?.was_hard ?? ""); setAppreciation(reflection?.appreciation_for_partner ?? ""); }} className="rounded-full border border-border bg-secondary px-5 py-2.5 text-sm font-medium transition hover:bg-accent">
+            Cancel
+          </button>
+        </div>
       )}
     </section>
   );
 }
+
 
 function PartnerReflectionCard({
   reflection, partnerName, bothSubmitted, partnerSubmitted,

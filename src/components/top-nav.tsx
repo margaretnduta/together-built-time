@@ -20,8 +20,10 @@ const links = [
   { to: "/goals", label: "Goals" },
   { to: "/reflections", label: "Reflections" },
   { to: "/dates", label: "Dates" },
+  { to: "/history", label: "History" },
   { to: "/account", label: "Account" },
 ] as const;
+
 
 const linkBase =
   "shrink-0 rounded-full px-4 py-1.5 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground";
