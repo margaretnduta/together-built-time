@@ -91,6 +91,8 @@ export type Database = {
           completed_by: string | null
           created_at: string
           created_by: string
+          decline_reason: string | null
+          declined_by: string | null
           description: string | null
           id: string
           is_complete: boolean
@@ -108,6 +110,8 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           created_by: string
+          decline_reason?: string | null
+          declined_by?: string | null
           description?: string | null
           id?: string
           is_complete?: boolean
@@ -125,6 +129,8 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           created_by?: string
+          decline_reason?: string | null
+          declined_by?: string | null
           description?: string | null
           id?: string
           is_complete?: boolean
@@ -135,7 +141,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "couple_goals_declined_by_fkey"
+            columns: ["declined_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_tasks: {
         Row: {
@@ -195,10 +209,16 @@ export type Database = {
         Row: {
           approval_status: string
           approved_by: string[]
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           category: string
           created_at: string
           created_by: string
           date: string
+          decline_reason: string | null
+          declined_by: string | null
+          deliverables: string[]
           dress_code: string | null
           event_time: string | null
           id: string
@@ -212,10 +232,16 @@ export type Database = {
         Insert: {
           approval_status?: string
           approved_by?: string[]
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           category?: string
           created_at?: string
           created_by: string
           date: string
+          decline_reason?: string | null
+          declined_by?: string | null
+          deliverables?: string[]
           dress_code?: string | null
           event_time?: string | null
           id?: string
@@ -229,10 +255,16 @@ export type Database = {
         Update: {
           approval_status?: string
           approved_by?: string[]
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           category?: string
           created_at?: string
           created_by?: string
           date?: string
+          decline_reason?: string | null
+          declined_by?: string | null
+          deliverables?: string[]
           dress_code?: string | null
           event_time?: string | null
           id?: string
@@ -243,7 +275,22 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "important_dates_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "important_dates_declined_by_fkey"
+            columns: ["declined_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partnerships: {
         Row: {
