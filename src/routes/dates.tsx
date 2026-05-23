@@ -346,6 +346,33 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                     </p>
                   )}
                   {it.notes && <p className="mt-2 text-sm text-foreground/80">{it.notes}</p>}
+                  {(it.deliverables ?? []).length > 0 && (
+                    <div className="mt-3">
+                      <p className="mb-1.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                        <ListChecks className="h-3.5 w-3.5" /> Deliverables
+                      </p>
+                      <ul className="space-y-1">
+                        {(it.deliverables ?? []).map((raw, idx) => {
+                          const d = parseDeliverable(raw);
+                          return (
+                            <li key={idx} className="flex items-center gap-2 text-sm">
+                              <button
+                                onClick={() => toggleDeliverable(it, idx)}
+                                className={cn(
+                                  "flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition",
+                                  d.done ? "border-lavender-deep bg-lavender-deep" : "border-border hover:border-lavender-deep"
+                                )}
+                                aria-label={d.done ? "Mark undone" : "Mark done"}
+                              >
+                                {d.done && <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />}
+                              </button>
+                              <span className={d.done ? "text-muted-foreground line-through" : "text-foreground/90"}>{d.text}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <span className={cn(
@@ -356,8 +383,9 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   )}>
                     {countdownLabel(days)}
                   </span>
-                  <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                  <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                     <EditDateButton it={it} />
+                    <ReasonButton label="Cancel" icon={<Ban className="h-3.5 w-3.5" />} placeholder="Reason for cancelling (optional)" onSubmit={(r) => cancel(it, r)} compact />
                     <button onClick={() => remove(it.id)} aria-label="Delete">
                       <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                     </button>
