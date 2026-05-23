@@ -555,9 +555,17 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
               />
             ))}
 
-            {myTasks.length === 0 && (
+            {plannedForMe.map((tpl) => (
+              <li key={`planned-${tpl.id}`} className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-secondary/20 p-3 text-sm">
+                <Repeat className="h-4 w-4 shrink-0 text-lavender-deep" />
+                <span className="flex-1 truncate text-muted-foreground">{tpl.title}</span>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-lavender-deep">Scheduled</span>
+              </li>
+            ))}
+
+            {myTasks.length === 0 && plannedForMe.length === 0 && (
               <li className="rounded-xl bg-secondary/30 p-4 text-center text-sm text-muted-foreground">
-                A rest day is valid. Or add what you're working on.
+                {isPast ? "Nothing was logged for this day." : "A rest day is valid. Or add what you're working on."}
               </li>
             )}
           </ul>
@@ -574,7 +582,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
                 type="text"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="Add a task for today…"
+                placeholder={isToday ? "Add a task for today…" : isPast ? "Log a task for this day…" : "Plan a task for this day…"}
                 maxLength={200}
                 className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm focus:border-ring focus:outline-none"
               />
