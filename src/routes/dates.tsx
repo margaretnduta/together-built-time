@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt, Clock, Pencil, Check } from "lucide-react";
+import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt, Clock, Pencil, Check, Ban, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,9 +29,15 @@ type ImportantDate = {
   recurrence: Recurrence;
   notes: string | null;
   dress_code: string | null;
-  approval_status: "pending" | "accepted";
+  deliverables: string[];
+  approval_status: "pending" | "accepted" | "declined" | "cancelled";
   proposed_by: string | null;
   approved_by: string[];
+  decline_reason: string | null;
+  declined_by: string | null;
+  cancellation_reason: string | null;
+  cancelled_at: string | null;
+  cancelled_by: string | null;
 };
 
 function formatTime(t: string | null) {
