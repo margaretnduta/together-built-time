@@ -286,22 +286,27 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     [partnership, user.id]
   );
 
+  const [viewedDate, setViewedDate] = useState<string>(today);
+  const isToday = viewedDate === today;
+  const isPast = viewedDate < today;
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [newTitle, setNewTitle] = useState("");
   const [newRecurrence, setNewRecurrence] = useState<"once" | "daily" | "weekly">("once");
   const [adding, setAdding] = useState(false);
+  const [myTemplates, setMyTemplates] = useState<{ id: string; title: string; recurrence: "daily" | "weekly"; weekday: number | null; active: boolean }[]>([]);
 
   const loadTasks = useCallback(async () => {
     const { data } = await supabase
       .from("daily_tasks")
       .select("*")
       .eq("partnership_id", partnership.id)
-      .eq("task_date", today)
+      .eq("task_date", viewedDate)
       .order("sort_order")
       .order("created_at");
     setTasks((data as Task[]) ?? []);
-  }, [partnership.id, today]);
+  }, [partnership.id, viewedDate]);
 
   const loadProfiles = useCallback(async () => {
     const { data } = await supabase
