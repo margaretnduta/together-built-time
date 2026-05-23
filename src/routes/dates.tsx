@@ -281,9 +281,9 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   </p>
                   {it.dress_code && <p className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1"><Shirt className="h-3 w-3" />{it.dress_code}</p>}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <button onClick={() => approve(it)} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft">Accept</button>
-                  <button onClick={() => remove(it.id)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">Decline</button>
+                  <ReasonButton label="Decline" placeholder="Why are you declining? (optional)" onSubmit={(r) => decline(it, r)} />
                 </div>
               </li>
             ))}
