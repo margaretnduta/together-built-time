@@ -174,6 +174,8 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
   const accepted = useMemo(() => items.filter(i => i.approval_status === "accepted"), [items]);
   const pendingForMe = useMemo(() => items.filter(i => i.approval_status === "pending" && !(i.approved_by ?? []).includes(user.id)), [items, user.id]);
   const pendingByMe = useMemo(() => items.filter(i => i.approval_status === "pending" && i.proposed_by === user.id), [items, user.id]);
+  const cancelled = useMemo(() => items.filter(i => i.approval_status === "cancelled").slice(0, 5), [items]);
+  const declined = useMemo(() => items.filter(i => i.approval_status === "declined").slice(0, 5), [items]);
 
   const enriched = useMemo(() => {
     return accepted
@@ -192,9 +194,31 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
   }
   async function approve(it: ImportantDate) {
     const next = Array.from(new Set([...(it.approved_by ?? []), user.id]));
-    const { error } = await supabase.from("important_dates").update({ approved_by: next } as never).eq("id", it.id);
+    const { error } = await supabase.from("important_dates").update({ approved_by: next, approval_status: "accepted" } as never).eq("id", it.id);
     if (error) toast.error(error.message);
     else toast.success("Accepted 💞");
+  }
+  async function decline(it: ImportantDate, reason: string) {
+    const { error } = await supabase.from("important_dates").update({
+      approval_status: "declined", decline_reason: reason || null, declined_by: user.id,
+    } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
+    else toast.success("Declined — your partner will be notified.");
+  }
+  async function cancel(it: ImportantDate, reason: string) {
+    const { error } = await supabase.from("important_dates").update({
+      approval_status: "cancelled", cancellation_reason: reason || null, cancelled_by: user.id, cancelled_at: new Date().toISOString(),
+    } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
+    else toast.success("Cancelled — your partner will be notified.");
+  }
+  async function toggleDeliverable(it: ImportantDate, idx: number) {
+    const current = it.deliverables ?? [];
+    const parsed = current.map(parseDeliverable);
+    parsed[idx] = { text: parsed[idx].text, done: !parsed[idx].done };
+    const next = parsed.map(serializeDeliverable);
+    const { error } = await supabase.from("important_dates").update({ deliverables: next } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
   }
 
   return (
