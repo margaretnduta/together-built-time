@@ -7,6 +7,7 @@ import { Check, Plus, X, Loader2, Target, Sparkles, CalendarDays, Users, Lock, P
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { CelebrationInbox } from "@/components/celebration-inbox";
+import { ReasonButton } from "@/components/reason-button";
 
 export const Route = createFileRoute("/goals")({
   head: () => ({ meta: [{ title: "Goals — TwoGether" }] }),
@@ -31,9 +32,11 @@ type Goal = {
   completed_by: string | null;
   created_by: string;
   sort_order: number;
-  approval_status: "pending" | "accepted";
+  approval_status: "pending" | "accepted" | "declined";
   proposed_by: string | null;
   approved_by: string[];
+  decline_reason: string | null;
+  declined_by: string | null;
 };
 
 type Profile = { id: string; display_name: string };
