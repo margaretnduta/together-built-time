@@ -272,14 +272,22 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
 
   async function approve(g: Goal) {
     const next = Array.from(new Set([...(g.approved_by ?? []), user.id]));
-    const { error } = await supabase.from("couple_goals").update({ approved_by: next } as never).eq("id", g.id);
+    const { error } = await supabase.from("couple_goals").update({ approved_by: next, approval_status: "accepted" } as never).eq("id", g.id);
     if (error) toast.error(error.message);
     else toast.success("Accepted 💞");
+  }
+  async function declineGoal(g: Goal, reason: string) {
+    const { error } = await supabase.from("couple_goals").update({
+      approval_status: "declined", decline_reason: reason || null, declined_by: user.id,
+    } as never).eq("id", g.id);
+    if (error) toast.error(error.message);
+    else toast.success("Declined — your partner will be notified.");
   }
 
   const accepted = goals.filter(g => g.approval_status === "accepted");
   const pendingForMe = goals.filter(g => g.approval_status === "pending" && !(g.approved_by ?? []).includes(user.id));
   const pendingMine = goals.filter(g => g.approval_status === "pending" && (g.approved_by ?? []).includes(user.id));
+  const declined = goals.filter(g => g.approval_status === "declined");
 
   return (
     <>
