@@ -48,6 +48,17 @@ function formatTime(t: string | null) {
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
+// Deliverables are stored as plain strings. We encode the "done" state with
+// a leading "[x] " or "[ ] " marker so the existing text[] column is enough.
+function parseDeliverable(raw: string): { text: string; done: boolean } {
+  const m = /^\[(x| )\]\s?(.*)$/.exec(raw);
+  if (m) return { text: m[2], done: m[1] === "x" };
+  return { text: raw, done: false };
+}
+function serializeDeliverable(d: { text: string; done: boolean }): string {
+  return `[${d.done ? "x" : " "}] ${d.text}`;
+}
+
 function DatesPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
