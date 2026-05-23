@@ -396,9 +396,138 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
           );
         })}
       </ul>
+
+      {/* History: declined & cancelled (compact, partner stays informed) */}
+      {(declined.length > 0 || cancelled.length > 0) && (
+        <div className="mt-8 space-y-4">
+          {declined.length > 0 && (
+            <details className="rounded-2xl border border-border bg-card/50 p-4">
+              <summary className="cursor-pointer text-xs font-medium uppercase tracking-widest text-muted-foreground">Recently declined ({declined.length})</summary>
+              <ul className="mt-3 space-y-2">
+                {declined.map(it => (
+                  <li key={it.id} className="flex items-start justify-between gap-3 rounded-xl bg-secondary/30 p-3 text-sm">
+                    <div>
+                      <p className="font-medium">{it.title}</p>
+                      {it.decline_reason && <p className="mt-0.5 text-xs text-muted-foreground">Reason: {it.decline_reason}</p>}
+                    </div>
+                    <button onClick={() => remove(it.id)} aria-label="Remove" className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {cancelled.length > 0 && (
+            <details className="rounded-2xl border border-border bg-card/50 p-4">
+              <summary className="cursor-pointer text-xs font-medium uppercase tracking-widest text-muted-foreground">Recently cancelled ({cancelled.length})</summary>
+              <ul className="mt-3 space-y-2">
+                {cancelled.map(it => (
+                  <li key={it.id} className="flex items-start justify-between gap-3 rounded-xl bg-secondary/30 p-3 text-sm">
+                    <div>
+                      <p className="font-medium">{it.title}</p>
+                      {it.cancellation_reason && <p className="mt-0.5 text-xs text-muted-foreground">Reason: {it.cancellation_reason}</p>}
+                    </div>
+                    <button onClick={() => remove(it.id)} aria-label="Remove" className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
+// =========== Inline reason capture for decline/cancel actions ===========
+function ReasonButton({ label, placeholder, onSubmit, icon, compact }: {
+  label: string;
+  placeholder: string;
+  onSubmit: (reason: string) => void;
+  icon?: React.ReactNode;
+  compact?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setReason(""); }}>
+      <PopoverTrigger asChild>
+        {compact ? (
+          <button aria-label={label} title={label} className="text-muted-foreground hover:text-destructive">
+            {icon ?? <Ban className="h-3.5 w-3.5" />}
+          </button>
+        ) : (
+          <button className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">
+            {label}
+          </button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 space-y-2">
+        <p className="text-sm font-medium">{label}</p>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder={placeholder}
+          maxLength={300}
+          rows={3}
+          className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-none"
+        />
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setOpen(false)} className="rounded-full border border-border bg-background px-3 py-1 text-xs">Back</button>
+          <button
+            onClick={() => { onSubmit(reason.trim()); setOpen(false); setReason(""); }}
+            className="rounded-full bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground"
+          >
+            Confirm {label.toLowerCase()}
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// =========== Reusable deliverables editor (used in Add + Edit) ============
+function DeliverablesEditor({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [draft, setDraft] = useState("");
+  function add() {
+    const t = draft.trim();
+    if (!t) return;
+    onChange([...value, serializeDeliverable({ text: t, done: false })]);
+    setDraft("");
+  }
+  return (
+    <div className="rounded-xl border border-border bg-background p-3">
+      <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+        <ListChecks className="h-3.5 w-3.5" /> Deliverables / checklist
+      </p>
+      <ul className="space-y-1.5">
+        {value.map((raw, idx) => {
+          const d = parseDeliverable(raw);
+          return (
+            <li key={idx} className="flex items-center gap-2 rounded-md bg-secondary/40 px-2 py-1 text-sm">
+              <span className="flex-1">{d.text}</span>
+              <button type="button" onClick={() => onChange(value.filter((_, i) => i !== idx))} aria-label="Remove" className="text-muted-foreground hover:text-destructive">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          placeholder="e.g. Book a table, buy flowers…"
+          maxLength={120}
+          className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs focus:border-ring focus:outline-none"
+        />
+        <button type="button" onClick={add} className="rounded-full bg-gradient-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Add</button>
+      </div>
+    </div>
+  );
+}
+
 
 // =========== Inline editable row for the proposer's pending dates ===========
 function EditableDateRow({ it, onRemove }: { it: ImportantDate; onRemove: () => void }) {
