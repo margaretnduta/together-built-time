@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles, Repeat, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
+import { CoupleAchievements } from "@/components/couple-achievements";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -285,22 +286,27 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     [partnership, user.id]
   );
 
+  const [viewedDate, setViewedDate] = useState<string>(today);
+  const isToday = viewedDate === today;
+  const isPast = viewedDate < today;
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [newTitle, setNewTitle] = useState("");
   const [newRecurrence, setNewRecurrence] = useState<"once" | "daily" | "weekly">("once");
   const [adding, setAdding] = useState(false);
+  const [myTemplates, setMyTemplates] = useState<{ id: string; title: string; recurrence: "daily" | "weekly"; weekday: number | null; active: boolean }[]>([]);
 
   const loadTasks = useCallback(async () => {
     const { data } = await supabase
       .from("daily_tasks")
       .select("*")
       .eq("partnership_id", partnership.id)
-      .eq("task_date", today)
+      .eq("task_date", viewedDate)
       .order("sort_order")
       .order("created_at");
     setTasks((data as Task[]) ?? []);
-  }, [partnership.id, today]);
+  }, [partnership.id, viewedDate]);
 
   const loadProfiles = useCallback(async () => {
     const { data } = await supabase
@@ -321,18 +327,45 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     loadProfiles();
   }, [loadTasks, loadProfiles]);
 
-  // Realtime subscription
+  // Load my recurring templates (used to project planned tasks on non-today days)
+  const loadMyTemplates = useCallback(async () => {
+    const { data } = await supabase
+      .from("recurring_task_templates")
+      .select("id, title, recurrence, weekday, active")
+      .eq("owner_id", user.id)
+      .eq("active", true);
+    setMyTemplates((data as typeof myTemplates) ?? []);
+  }, [user.id]);
+  useEffect(() => { loadMyTemplates(); }, [loadMyTemplates]);
+
+  // Realtime subscription — tasks for the partnership, plus my templates
   useEffect(() => {
     const ch = supabase
-      .channel(`tasks-${partnership.id}`)
+      .channel(`tasks-${partnership.id}-${user.id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "daily_tasks", filter: `partnership_id=eq.${partnership.id}` },
         () => loadTasks()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "recurring_task_templates", filter: `owner_id=eq.${user.id}` },
+        () => loadMyTemplates()
+      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [partnership.id, loadTasks]);
+  }, [partnership.id, user.id, loadTasks, loadMyTemplates]);
+
+  // Planned items: for non-today views, surface recurring templates that would
+  // apply on the viewed weekday but don't yet have a materialized row.
+  const viewedWeekday = new Date(viewedDate + "T00:00:00").getDay();
+  const plannedForMe = useMemo(() => {
+    if (isToday) return [];
+    const titlesOnDate = new Set(tasks.filter(t => t.owner_id === user.id).map(t => t.title));
+    return myTemplates
+      .filter(t => t.recurrence === "daily" || (t.recurrence === "weekly" && t.weekday === viewedWeekday))
+      .filter(t => !titlesOnDate.has(t.title));
+  }, [isToday, myTemplates, tasks, user.id, viewedWeekday]);
 
   const myTasks = tasks.filter((t) => t.owner_id === user.id);
   const partnerTasks = tasks.filter((t) => t.owner_id === partnerId);
@@ -365,7 +398,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     const { error } = await supabase.from("daily_tasks").insert({
       partnership_id: partnership.id,
       owner_id: user.id,
-      task_date: today,
+      task_date: viewedDate,
       title,
       sort_order: myTasks.length,
       template_id: templateId,
@@ -401,26 +434,41 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
 
   const partnerName = profiles[partnerId]?.display_name ?? "Partner";
   const myName = profiles[user.id]?.display_name ?? "You";
-  const dateLabel = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const dateLabel = new Date(viewedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   // Partnership days counter
   const daysTogether = useMemo(() => {
     if (!partnership.formed_at) return null;
     const start = new Date(partnership.formed_at);
     start.setHours(0, 0, 0, 0);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    return Math.max(0, Math.round((today.getTime() - start.getTime()) / 86400000)) + 1;
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.round((t.getTime() - start.getTime()) / 86400000)) + 1;
   }, [partnership.formed_at]);
 
   const combinedPct = Math.round((myPct + partnerPct) / 2);
 
+  // Build a Mon-Sun strip anchored on the viewed date's ISO week.
+  const weekDays = useMemo(() => {
+    const d = new Date(viewedDate + "T00:00:00");
+    const day = d.getDay(); // 0=Sun..6=Sat
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(d); monday.setDate(d.getDate() + mondayOffset);
+    return Array.from({ length: 7 }, (_, i) => {
+      const dd = new Date(monday); dd.setDate(monday.getDate() + i);
+      return dd.toISOString().slice(0, 10);
+    });
+  }, [viewedDate]);
+
   return (
     <div>
+      <CoupleAchievements userId={user.id} partnershipId={partnership.id} formedAt={partnership.formed_at} />
       <StreakBar userId={user.id} partnershipId={partnership.id} />
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">{dateLabel}</p>
-          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">Today</h1>
+          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">
+            {isToday ? "Today" : isPast ? "Looking back" : "Planning ahead"}
+          </h1>
         </div>
         {daysTogether !== null && (
           <div className="rounded-2xl border border-border bg-card px-4 py-2 text-right shadow-soft">
@@ -430,6 +478,30 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
             </p>
           </div>
         )}
+      </div>
+
+      {/* Day-of-week navigator (Mon–Sun for the viewed week) */}
+      <div className="mb-8 overflow-x-auto">
+        <div className="inline-flex gap-1.5 rounded-full border border-border bg-card p-1 shadow-soft">
+          {weekDays.map((iso) => {
+            const d = new Date(iso + "T00:00:00");
+            const labels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            const active = iso === viewedDate;
+            const isTodayPill = iso === today;
+            return (
+              <button
+                key={iso}
+                onClick={() => setViewedDate(iso)}
+                className={`flex min-w-[3.25rem] flex-col items-center rounded-full px-3 py-1.5 text-[11px] font-medium transition ${
+                  active ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className="uppercase tracking-wider">{labels[d.getDay()]}</span>
+                <span className={`font-display text-base leading-none ${isTodayPill && !active ? "text-lavender-deep" : ""}`}>{d.getDate()}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Engagement banner */}
@@ -483,9 +555,17 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
               />
             ))}
 
-            {myTasks.length === 0 && (
+            {plannedForMe.map((tpl) => (
+              <li key={`planned-${tpl.id}`} className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-secondary/20 p-3 text-sm">
+                <Repeat className="h-4 w-4 shrink-0 text-lavender-deep" />
+                <span className="flex-1 truncate text-muted-foreground">{tpl.title}</span>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-lavender-deep">Scheduled</span>
+              </li>
+            ))}
+
+            {myTasks.length === 0 && plannedForMe.length === 0 && (
               <li className="rounded-xl bg-secondary/30 p-4 text-center text-sm text-muted-foreground">
-                A rest day is valid. Or add what you're working on.
+                {isPast ? "Nothing was logged for this day." : "A rest day is valid. Or add what you're working on."}
               </li>
             )}
           </ul>
@@ -502,7 +582,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
                 type="text"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="Add a task for today…"
+                placeholder={isToday ? "Add a task for today…" : isPast ? "Log a task for this day…" : "Plan a task for this day…"}
                 maxLength={200}
                 className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm focus:border-ring focus:outline-none"
               />

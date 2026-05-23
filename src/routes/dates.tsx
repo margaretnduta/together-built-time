@@ -3,12 +3,13 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt, Clock, Pencil, Check } from "lucide-react";
+import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt, Clock, Pencil, Check, Ban, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { ReasonButton } from "@/components/reason-button";
 
 export const Route = createFileRoute("/dates")({
   head: () => ({ meta: [{ title: "Important Dates — TwoGether" }] }),
@@ -29,9 +30,15 @@ type ImportantDate = {
   recurrence: Recurrence;
   notes: string | null;
   dress_code: string | null;
-  approval_status: "pending" | "accepted";
+  deliverables: string[];
+  approval_status: "pending" | "accepted" | "declined" | "cancelled";
   proposed_by: string | null;
   approved_by: string[];
+  decline_reason: string | null;
+  declined_by: string | null;
+  cancellation_reason: string | null;
+  cancelled_at: string | null;
+  cancelled_by: string | null;
 };
 
 function formatTime(t: string | null) {
@@ -40,6 +47,17 @@ function formatTime(t: string | null) {
   const d = new Date();
   d.setHours(Number(h), Number(m), 0, 0);
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+// Deliverables are stored as plain strings. We encode the "done" state with
+// a leading "[x] " or "[ ] " marker so the existing text[] column is enough.
+function parseDeliverable(raw: string): { text: string; done: boolean } {
+  const m = /^\[(x| )\]\s?(.*)$/.exec(raw);
+  if (m) return { text: m[2], done: m[1] === "x" };
+  return { text: raw, done: false };
+}
+function serializeDeliverable(d: { text: string; done: boolean }): string {
+  return `[${d.done ? "x" : " "}] ${d.text}`;
 }
 
 function DatesPage() {
@@ -168,6 +186,8 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
   const accepted = useMemo(() => items.filter(i => i.approval_status === "accepted"), [items]);
   const pendingForMe = useMemo(() => items.filter(i => i.approval_status === "pending" && !(i.approved_by ?? []).includes(user.id)), [items, user.id]);
   const pendingByMe = useMemo(() => items.filter(i => i.approval_status === "pending" && i.proposed_by === user.id), [items, user.id]);
+  const cancelled = useMemo(() => items.filter(i => i.approval_status === "cancelled").slice(0, 5), [items]);
+  const declined = useMemo(() => items.filter(i => i.approval_status === "declined").slice(0, 5), [items]);
 
   const enriched = useMemo(() => {
     return accepted
@@ -186,9 +206,31 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
   }
   async function approve(it: ImportantDate) {
     const next = Array.from(new Set([...(it.approved_by ?? []), user.id]));
-    const { error } = await supabase.from("important_dates").update({ approved_by: next } as never).eq("id", it.id);
+    const { error } = await supabase.from("important_dates").update({ approved_by: next, approval_status: "accepted" } as never).eq("id", it.id);
     if (error) toast.error(error.message);
     else toast.success("Accepted 💞");
+  }
+  async function decline(it: ImportantDate, reason: string) {
+    const { error } = await supabase.from("important_dates").update({
+      approval_status: "declined", decline_reason: reason || null, declined_by: user.id,
+    } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
+    else toast.success("Declined — your partner will be notified.");
+  }
+  async function cancel(it: ImportantDate, reason: string) {
+    const { error } = await supabase.from("important_dates").update({
+      approval_status: "cancelled", cancellation_reason: reason || null, cancelled_by: user.id, cancelled_at: new Date().toISOString(),
+    } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
+    else toast.success("Cancelled — your partner will be notified.");
+  }
+  async function toggleDeliverable(it: ImportantDate, idx: number) {
+    const current = it.deliverables ?? [];
+    const parsed = current.map(parseDeliverable);
+    parsed[idx] = { text: parsed[idx].text, done: !parsed[idx].done };
+    const next = parsed.map(serializeDeliverable);
+    const { error } = await supabase.from("important_dates").update({ deliverables: next } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
   }
 
   return (
@@ -240,9 +282,9 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   </p>
                   {it.dress_code && <p className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1"><Shirt className="h-3 w-3" />{it.dress_code}</p>}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <button onClick={() => approve(it)} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft">Accept</button>
-                  <button onClick={() => remove(it.id)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">Decline</button>
+                  <ReasonButton label="Decline" placeholder="Why are you declining? (optional)" onSubmit={(r) => decline(it, r)} />
                 </div>
               </li>
             ))}
@@ -305,6 +347,33 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                     </p>
                   )}
                   {it.notes && <p className="mt-2 text-sm text-foreground/80">{it.notes}</p>}
+                  {(it.deliverables ?? []).length > 0 && (
+                    <div className="mt-3">
+                      <p className="mb-1.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                        <ListChecks className="h-3.5 w-3.5" /> Deliverables
+                      </p>
+                      <ul className="space-y-1">
+                        {(it.deliverables ?? []).map((raw, idx) => {
+                          const d = parseDeliverable(raw);
+                          return (
+                            <li key={idx} className="flex items-center gap-2 text-sm">
+                              <button
+                                onClick={() => toggleDeliverable(it, idx)}
+                                className={cn(
+                                  "flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition",
+                                  d.done ? "border-lavender-deep bg-lavender-deep" : "border-border hover:border-lavender-deep"
+                                )}
+                                aria-label={d.done ? "Mark undone" : "Mark done"}
+                              >
+                                {d.done && <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />}
+                              </button>
+                              <span className={d.done ? "text-muted-foreground line-through" : "text-foreground/90"}>{d.text}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <span className={cn(
@@ -315,8 +384,9 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   )}>
                     {countdownLabel(days)}
                   </span>
-                  <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                  <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                     <EditDateButton it={it} />
+                    <ReasonButton label="Cancel" icon={<Ban className="h-3.5 w-3.5" />} placeholder="Reason for cancelling (optional)" onSubmit={(r) => cancel(it, r)} compact />
                     <button onClick={() => remove(it.id)} aria-label="Delete">
                       <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                     </button>
@@ -327,9 +397,93 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
           );
         })}
       </ul>
+
+      {/* History: declined & cancelled (compact, partner stays informed) */}
+      {(declined.length > 0 || cancelled.length > 0) && (
+        <div className="mt-8 space-y-4">
+          {declined.length > 0 && (
+            <details className="rounded-2xl border border-border bg-card/50 p-4">
+              <summary className="cursor-pointer text-xs font-medium uppercase tracking-widest text-muted-foreground">Recently declined ({declined.length})</summary>
+              <ul className="mt-3 space-y-2">
+                {declined.map(it => (
+                  <li key={it.id} className="flex items-start justify-between gap-3 rounded-xl bg-secondary/30 p-3 text-sm">
+                    <div>
+                      <p className="font-medium">{it.title}</p>
+                      {it.decline_reason && <p className="mt-0.5 text-xs text-muted-foreground">Reason: {it.decline_reason}</p>}
+                    </div>
+                    <button onClick={() => remove(it.id)} aria-label="Remove" className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {cancelled.length > 0 && (
+            <details className="rounded-2xl border border-border bg-card/50 p-4">
+              <summary className="cursor-pointer text-xs font-medium uppercase tracking-widest text-muted-foreground">Recently cancelled ({cancelled.length})</summary>
+              <ul className="mt-3 space-y-2">
+                {cancelled.map(it => (
+                  <li key={it.id} className="flex items-start justify-between gap-3 rounded-xl bg-secondary/30 p-3 text-sm">
+                    <div>
+                      <p className="font-medium">{it.title}</p>
+                      {it.cancellation_reason && <p className="mt-0.5 text-xs text-muted-foreground">Reason: {it.cancellation_reason}</p>}
+                    </div>
+                    <button onClick={() => remove(it.id)} aria-label="Remove" className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
+// Reason capture popover lives in src/components/reason-button.tsx
+
+// =========== Reusable deliverables editor (used in Add + Edit) ============
+function DeliverablesEditor({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [draft, setDraft] = useState("");
+  function add() {
+    const t = draft.trim();
+    if (!t) return;
+    onChange([...value, serializeDeliverable({ text: t, done: false })]);
+    setDraft("");
+  }
+  return (
+    <div className="rounded-xl border border-border bg-background p-3">
+      <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+        <ListChecks className="h-3.5 w-3.5" /> Deliverables / checklist
+      </p>
+      <ul className="space-y-1.5">
+        {value.map((raw, idx) => {
+          const d = parseDeliverable(raw);
+          return (
+            <li key={idx} className="flex items-center gap-2 rounded-md bg-secondary/40 px-2 py-1 text-sm">
+              <span className="flex-1">{d.text}</span>
+              <button type="button" onClick={() => onChange(value.filter((_, i) => i !== idx))} aria-label="Remove" className="text-muted-foreground hover:text-destructive">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          placeholder="e.g. Book a table, buy flowers…"
+          maxLength={120}
+          className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs focus:border-ring focus:outline-none"
+        />
+        <button type="button" onClick={add} className="rounded-full bg-gradient-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Add</button>
+      </div>
+    </div>
+  );
+}
+
 
 // =========== Inline editable row for the proposer's pending dates ===========
 function EditableDateRow({ it, onRemove }: { it: ImportantDate; onRemove: () => void }) {
@@ -383,6 +537,7 @@ function DateEditor({ it, onDone }: { it: ImportantDate; onDone: () => void }) {
   const [date, setDate] = useState<Date | undefined>(new Date(it.date + "T00:00:00"));
   const [time, setTime] = useState<string>(it.event_time?.slice(0, 5) ?? "");
   const [dressCode, setDressCode] = useState(it.dress_code ?? "");
+  const [deliverables, setDeliverables] = useState<string[]>(it.deliverables ?? []);
   const [busy, setBusy] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
 
@@ -395,6 +550,7 @@ function DateEditor({ it, onDone }: { it: ImportantDate; onDone: () => void }) {
       date: iso,
       event_time: time || null,
       dress_code: dressCode.trim() || null,
+      deliverables,
     } as never).eq("id", it.id);
     setBusy(false);
     if (error) toast.error(error.message);
@@ -429,6 +585,7 @@ function DateEditor({ it, onDone }: { it: ImportantDate; onDone: () => void }) {
         <Shirt className="h-3.5 w-3.5 shrink-0 text-lavender-deep" />
         <input type="text" value={dressCode} onChange={(e) => setDressCode(e.target.value)} placeholder="Dress code (optional)" maxLength={200} className="flex-1 bg-transparent text-xs focus:outline-none" />
       </div>
+      <DeliverablesEditor value={deliverables} onChange={setDeliverables} />
       <div className="flex justify-end gap-2 pt-1">
         <button onClick={onDone} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs">Cancel</button>
         <button onClick={save} disabled={busy} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft disabled:opacity-60">
@@ -447,6 +604,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
   const [recurrence, setRecurrence] = useState<Recurrence>("yearly");
   const [notes, setNotes] = useState("");
   const [dressCode, setDressCode] = useState("");
+  const [deliverables, setDeliverables] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -465,13 +623,14 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
       recurrence,
       notes: notes.trim() || null,
       dress_code: dressCode.trim() || null,
+      deliverables,
       proposed_by: user.id,
       approved_by: [user.id],
       approval_status: "pending",
     } as never);
     if (error) toast.error(error.message);
     else {
-      setTitle(""); setDate(undefined); setTime(""); setNotes(""); setDressCode("");
+      setTitle(""); setDate(undefined); setTime(""); setNotes(""); setDressCode(""); setDeliverables([]);
       setCategory("anniversary"); setRecurrence("yearly");
       toast.success("Sent for partner approval 💌");
     }
@@ -578,6 +737,10 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
         placeholder="Optional notes (where, why it matters…)" maxLength={500} rows={2}
         className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
       />
+
+      <div className="mt-3">
+        <DeliverablesEditor value={deliverables} onChange={setDeliverables} />
+      </div>
 
       <button
         type="submit" disabled={busy || !title.trim() || !date}

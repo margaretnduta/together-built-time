@@ -7,6 +7,7 @@ import { Check, Plus, X, Loader2, Target, Sparkles, CalendarDays, Users, Lock, P
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { CelebrationInbox } from "@/components/celebration-inbox";
+import { ReasonButton } from "@/components/reason-button";
 
 export const Route = createFileRoute("/goals")({
   head: () => ({ meta: [{ title: "Goals — TwoGether" }] }),
@@ -31,9 +32,11 @@ type Goal = {
   completed_by: string | null;
   created_by: string;
   sort_order: number;
-  approval_status: "pending" | "accepted";
+  approval_status: "pending" | "accepted" | "declined";
   proposed_by: string | null;
   approved_by: string[];
+  decline_reason: string | null;
+  declined_by: string | null;
 };
 
 type Profile = { id: string; display_name: string };
@@ -269,14 +272,22 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
 
   async function approve(g: Goal) {
     const next = Array.from(new Set([...(g.approved_by ?? []), user.id]));
-    const { error } = await supabase.from("couple_goals").update({ approved_by: next } as never).eq("id", g.id);
+    const { error } = await supabase.from("couple_goals").update({ approved_by: next, approval_status: "accepted" } as never).eq("id", g.id);
     if (error) toast.error(error.message);
     else toast.success("Accepted 💞");
+  }
+  async function declineGoal(g: Goal, reason: string) {
+    const { error } = await supabase.from("couple_goals").update({
+      approval_status: "declined", decline_reason: reason || null, declined_by: user.id,
+    } as never).eq("id", g.id);
+    if (error) toast.error(error.message);
+    else toast.success("Declined — your partner will be notified.");
   }
 
   const accepted = goals.filter(g => g.approval_status === "accepted");
   const pendingForMe = goals.filter(g => g.approval_status === "pending" && !(g.approved_by ?? []).includes(user.id));
   const pendingMine = goals.filter(g => g.approval_status === "pending" && (g.approved_by ?? []).includes(user.id));
+  const declined = goals.filter(g => g.approval_status === "declined");
 
   return (
     <>
@@ -300,9 +311,9 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
                     {g.description && <p className="mt-0.5 text-sm text-muted-foreground">{g.description}</p>}
                     <p className="mt-1 text-xs text-muted-foreground">Proposed by {proposer}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <button onClick={() => approve(g)} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft">Accept</button>
-                    <button onClick={() => remove(g)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive">Decline</button>
+                    <ReasonButton label="Decline" placeholder="Why are you declining? (optional)" onSubmit={(r) => declineGoal(g, r)} />
                   </div>
                 </li>
               );
@@ -338,6 +349,24 @@ function CouplePanel({ user, partnership, month }: { user: { id: string }; partn
           );
         })}
       </ul>
+
+      {declined.length > 0 && (
+        <details className="mt-6 rounded-2xl border border-border bg-card/50 p-4">
+          <summary className="cursor-pointer text-xs font-medium uppercase tracking-widest text-muted-foreground">Recently declined ({declined.length})</summary>
+          <ul className="mt-3 space-y-2">
+            {declined.map(g => (
+              <li key={g.id} className="flex items-start justify-between gap-3 rounded-xl bg-secondary/30 p-3 text-sm">
+                <div>
+                  <p className="font-medium">{g.title}</p>
+                  {g.decline_reason && <p className="mt-0.5 text-xs text-muted-foreground">Reason: {g.decline_reason}</p>}
+                </div>
+                <button onClick={() => remove(g)} aria-label="Remove" className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       <AddGoalForm
         atLimit={atLimit} limit={LIMIT} count={goals.length}
         title={title} setTitle={setTitle} desc={desc} setDesc={setDesc}
