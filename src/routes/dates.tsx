@@ -648,6 +648,7 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
   const [recurrence, setRecurrence] = useState<Recurrence>("yearly");
   const [notes, setNotes] = useState("");
   const [dressCode, setDressCode] = useState("");
+  const [deliverables, setDeliverables] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -666,13 +667,14 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
       recurrence,
       notes: notes.trim() || null,
       dress_code: dressCode.trim() || null,
+      deliverables,
       proposed_by: user.id,
       approved_by: [user.id],
       approval_status: "pending",
     } as never);
     if (error) toast.error(error.message);
     else {
-      setTitle(""); setDate(undefined); setTime(""); setNotes(""); setDressCode("");
+      setTitle(""); setDate(undefined); setTime(""); setNotes(""); setDressCode(""); setDeliverables([]);
       setCategory("anniversary"); setRecurrence("yearly");
       toast.success("Sent for partner approval 💌");
     }
