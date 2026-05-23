@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Bell } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -262,13 +263,24 @@ export function NotificationsBell() {
               You're all caught up.
             </li>
           )}
-          {items.map((n) => (
-            <li key={n.id} className="border-b border-border/50 px-4 py-3 last:border-0">
-              <p className="text-sm font-medium text-foreground">{n.title}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
-              <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">{timeAgo(n.at)}</p>
-            </li>
-          ))}
+          {items.map((n) => {
+            const content = (
+              <>
+                <p className="text-sm font-medium text-foreground">{n.title}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">{timeAgo(n.at)}</p>
+              </>
+            );
+            return (
+              <li key={n.id} className="border-b border-border/50 last:border-0">
+                {n.href ? (
+                  <Link to={n.href} onClick={() => setOpen(false)} className="block px-4 py-3 transition hover:bg-secondary/50">{content}</Link>
+                ) : (
+                  <div className="px-4 py-3">{content}</div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </PopoverContent>
     </Popover>
