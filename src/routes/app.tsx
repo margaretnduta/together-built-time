@@ -398,7 +398,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     const { error } = await supabase.from("daily_tasks").insert({
       partnership_id: partnership.id,
       owner_id: user.id,
-      task_date: today,
+      task_date: viewedDate,
       title,
       sort_order: myTasks.length,
       template_id: templateId,
@@ -434,26 +434,41 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
 
   const partnerName = profiles[partnerId]?.display_name ?? "Partner";
   const myName = profiles[user.id]?.display_name ?? "You";
-  const dateLabel = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const dateLabel = new Date(viewedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   // Partnership days counter
   const daysTogether = useMemo(() => {
     if (!partnership.formed_at) return null;
     const start = new Date(partnership.formed_at);
     start.setHours(0, 0, 0, 0);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    return Math.max(0, Math.round((today.getTime() - start.getTime()) / 86400000)) + 1;
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.round((t.getTime() - start.getTime()) / 86400000)) + 1;
   }, [partnership.formed_at]);
 
   const combinedPct = Math.round((myPct + partnerPct) / 2);
 
+  // Build a Mon-Sun strip anchored on the viewed date's ISO week.
+  const weekDays = useMemo(() => {
+    const d = new Date(viewedDate + "T00:00:00");
+    const day = d.getDay(); // 0=Sun..6=Sat
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(d); monday.setDate(d.getDate() + mondayOffset);
+    return Array.from({ length: 7 }, (_, i) => {
+      const dd = new Date(monday); dd.setDate(monday.getDate() + i);
+      return dd.toISOString().slice(0, 10);
+    });
+  }, [viewedDate]);
+
   return (
     <div>
+      <CoupleAchievements userId={user.id} partnershipId={partnership.id} formedAt={partnership.formed_at} />
       <StreakBar userId={user.id} partnershipId={partnership.id} />
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">{dateLabel}</p>
-          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">Today</h1>
+          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">
+            {isToday ? "Today" : isPast ? "Looking back" : "Planning ahead"}
+          </h1>
         </div>
         {daysTogether !== null && (
           <div className="rounded-2xl border border-border bg-card px-4 py-2 text-right shadow-soft">
@@ -463,6 +478,30 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
             </p>
           </div>
         )}
+      </div>
+
+      {/* Day-of-week navigator (Mon–Sun for the viewed week) */}
+      <div className="mb-8 overflow-x-auto">
+        <div className="inline-flex gap-1.5 rounded-full border border-border bg-card p-1 shadow-soft">
+          {weekDays.map((iso) => {
+            const d = new Date(iso + "T00:00:00");
+            const labels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            const active = iso === viewedDate;
+            const isTodayPill = iso === today;
+            return (
+              <button
+                key={iso}
+                onClick={() => setViewedDate(iso)}
+                className={`flex min-w-[3.25rem] flex-col items-center rounded-full px-3 py-1.5 text-[11px] font-medium transition ${
+                  active ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className="uppercase tracking-wider">{labels[d.getDay()]}</span>
+                <span className={`font-display text-base leading-none ${isTodayPill && !active ? "text-lavender-deep" : ""}`}>{d.getDate()}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Engagement banner */}
