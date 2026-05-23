@@ -144,6 +144,20 @@ export function NotificationsBell() {
           }
         }
       )
+      // Couple goal updates (declines, edits, completions by partner)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "couple_goals", filter: `partnership_id=eq.${pid}` },
+        (payload) => {
+          const oldRow = (payload.old ?? {}) as { approval_status?: string; is_complete?: boolean; title?: string };
+          const row = payload.new as { title?: string; approval_status?: string; declined_by?: string; decline_reason?: string; is_complete?: boolean; completed_by?: string };
+          if (row.approval_status === "declined" && oldRow.approval_status !== "declined" && row.declined_by && row.declined_by !== user.id) {
+            push({ title: "Goal declined", body: `Partner declined "${row.title}"${row.decline_reason ? `: ${row.decline_reason}` : ""}`, href: "/goals" });
+          } else if (row.is_complete && !oldRow.is_complete && row.completed_by && row.completed_by !== user.id) {
+            push({ title: "Goal celebrated 🎉", body: `Partner marked "${row.title}" done.`, href: "/goals" });
+          }
+        }
+      )
       // Proposals from partner — important dates
       .on(
         "postgres_changes",
@@ -155,14 +169,36 @@ export function NotificationsBell() {
           }
         }
       )
-      // Date updates from partner (edits while pending)
+      // Date updates — edits, declines, cancellations
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "important_dates", filter: `partnership_id=eq.${pid}` },
         (payload) => {
-          const row = payload.new as { created_by?: string; title?: string };
-          if (row.created_by && row.created_by !== user.id) {
-            push({ title: "Proposal updated", body: `Your partner edited: "${row.title}"`, href: "/dates" });
+          const oldRow = (payload.old ?? {}) as { approval_status?: string; date?: string; event_time?: string | null; title?: string };
+          const row = payload.new as {
+            created_by?: string; title?: string; approval_status?: string;
+            decline_reason?: string; declined_by?: string;
+            cancellation_reason?: string; cancelled_by?: string;
+            date?: string; event_time?: string | null;
+          };
+          // Decline
+          if (row.approval_status === "declined" && oldRow.approval_status !== "declined" && row.declined_by && row.declined_by !== user.id) {
+            push({ title: "Date declined", body: `Partner declined "${row.title}"${row.decline_reason ? `: ${row.decline_reason}` : ""}`, href: "/dates" });
+            return;
+          }
+          // Cancel
+          if (row.approval_status === "cancelled" && oldRow.approval_status !== "cancelled" && row.cancelled_by && row.cancelled_by !== user.id) {
+            push({ title: "Date cancelled", body: `Partner cancelled "${row.title}"${row.cancellation_reason ? `: ${row.cancellation_reason}` : ""}`, href: "/dates" });
+            return;
+          }
+          // Time/date edit
+          const timeChanged = oldRow.date !== row.date || (oldRow.event_time ?? null) !== (row.event_time ?? null);
+          if (row.created_by && row.created_by !== user.id && timeChanged) {
+            push({ title: "Date updated", body: `Partner changed timing for "${row.title}".`, href: "/dates" });
+            return;
+          }
+          if (row.created_by && row.created_by !== user.id && oldRow.title !== row.title) {
+            push({ title: "Proposal updated", body: `Partner edited: "${row.title}"`, href: "/dates" });
           }
         }
       )
