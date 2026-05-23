@@ -782,6 +782,10 @@ function AddDateForm({ user, partnership }: { user: { id: string }; partnership:
         className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
       />
 
+      <div className="mt-3">
+        <DeliverablesEditor value={deliverables} onChange={setDeliverables} />
+      </div>
+
       <button
         type="submit" disabled={busy || !title.trim() || !date}
         className="mt-3 flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
