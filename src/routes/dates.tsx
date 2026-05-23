@@ -581,6 +581,7 @@ function DateEditor({ it, onDone }: { it: ImportantDate; onDone: () => void }) {
   const [date, setDate] = useState<Date | undefined>(new Date(it.date + "T00:00:00"));
   const [time, setTime] = useState<string>(it.event_time?.slice(0, 5) ?? "");
   const [dressCode, setDressCode] = useState(it.dress_code ?? "");
+  const [deliverables, setDeliverables] = useState<string[]>(it.deliverables ?? []);
   const [busy, setBusy] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
 
@@ -593,6 +594,7 @@ function DateEditor({ it, onDone }: { it: ImportantDate; onDone: () => void }) {
       date: iso,
       event_time: time || null,
       dress_code: dressCode.trim() || null,
+      deliverables,
     } as never).eq("id", it.id);
     setBusy(false);
     if (error) toast.error(error.message);
@@ -627,6 +629,7 @@ function DateEditor({ it, onDone }: { it: ImportantDate; onDone: () => void }) {
         <Shirt className="h-3.5 w-3.5 shrink-0 text-lavender-deep" />
         <input type="text" value={dressCode} onChange={(e) => setDressCode(e.target.value)} placeholder="Dress code (optional)" maxLength={200} className="flex-1 bg-transparent text-xs focus:outline-none" />
       </div>
+      <DeliverablesEditor value={deliverables} onChange={setDeliverables} />
       <div className="flex justify-end gap-2 pt-1">
         <button onClick={onDone} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs">Cancel</button>
         <button onClick={save} disabled={busy} className="rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft disabled:opacity-60">
