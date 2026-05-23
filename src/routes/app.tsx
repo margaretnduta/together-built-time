@@ -327,18 +327,45 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
     loadProfiles();
   }, [loadTasks, loadProfiles]);
 
-  // Realtime subscription
+  // Load my recurring templates (used to project planned tasks on non-today days)
+  const loadMyTemplates = useCallback(async () => {
+    const { data } = await supabase
+      .from("recurring_task_templates")
+      .select("id, title, recurrence, weekday, active")
+      .eq("owner_id", user.id)
+      .eq("active", true);
+    setMyTemplates((data as typeof myTemplates) ?? []);
+  }, [user.id]);
+  useEffect(() => { loadMyTemplates(); }, [loadMyTemplates]);
+
+  // Realtime subscription — tasks for the partnership, plus my templates
   useEffect(() => {
     const ch = supabase
-      .channel(`tasks-${partnership.id}`)
+      .channel(`tasks-${partnership.id}-${user.id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "daily_tasks", filter: `partnership_id=eq.${partnership.id}` },
         () => loadTasks()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "recurring_task_templates", filter: `owner_id=eq.${user.id}` },
+        () => loadMyTemplates()
+      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [partnership.id, loadTasks]);
+  }, [partnership.id, user.id, loadTasks, loadMyTemplates]);
+
+  // Planned items: for non-today views, surface recurring templates that would
+  // apply on the viewed weekday but don't yet have a materialized row.
+  const viewedWeekday = new Date(viewedDate + "T00:00:00").getDay();
+  const plannedForMe = useMemo(() => {
+    if (isToday) return [];
+    const titlesOnDate = new Set(tasks.filter(t => t.owner_id === user.id).map(t => t.title));
+    return myTemplates
+      .filter(t => t.recurrence === "daily" || (t.recurrence === "weekly" && t.weekday === viewedWeekday))
+      .filter(t => !titlesOnDate.has(t.title));
+  }, [isToday, myTemplates, tasks, user.id, viewedWeekday]);
 
   const myTasks = tasks.filter((t) => t.owner_id === user.id);
   const partnerTasks = tasks.filter((t) => t.owner_id === partnerId);
