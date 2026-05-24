@@ -448,17 +448,28 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
 
   const combinedPct = Math.round((myPct + partnerPct) / 2);
 
-  // Build a 14-day strip anchored on TODAY's Monday: this week + next week.
+  // Build a 7-day strip for the selected week (offset by weekOffset from current week)
   const weekDays = useMemo(() => {
     const d = new Date(today + "T00:00:00");
     const day = d.getDay(); // 0=Sun..6=Sat
     const mondayOffset = day === 0 ? -6 : 1 - day;
-    const monday = new Date(d); monday.setDate(d.getDate() + mondayOffset);
-    return Array.from({ length: 14 }, (_, i) => {
-      const dd = new Date(monday); dd.setDate(monday.getDate() + i);
+    const currentMonday = new Date(d); currentMonday.setDate(d.getDate() + mondayOffset);
+    const selectedMonday = new Date(currentMonday);
+    selectedMonday.setDate(currentMonday.getDate() + weekOffset * 7);
+    return Array.from({ length: 7 }, (_, i) => {
+      const dd = new Date(selectedMonday); dd.setDate(selectedMonday.getDate() + i);
       return dd.toISOString().slice(0, 10);
     });
-  }, [today]);
+  }, [today, weekOffset]);
+
+  // Week range label like "Mon, May 19 – Sun, May 25"
+  const weekRangeLabel = useMemo(() => {
+    if (weekDays.length === 0) return "";
+    const start = new Date(weekDays[0] + "T00:00:00");
+    const end = new Date(weekDays[6] + "T00:00:00");
+    const fmt = (date: Date) => date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return `${fmt(start)} – ${fmt(end)}`;
+  }, [weekDays]);
 
   return (
     <div>
