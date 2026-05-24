@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles, Repeat, Trash2, Pencil } from "lucide-react";
+import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles, Repeat, Trash2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { CoupleAchievements } from "@/components/couple-achievements";
