@@ -40,48 +40,46 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-hero pb-24 pt-32 md:pb-40 md:pt-44">
-      {/* Soft floating orbs */}
-      <div className="pointer-events-none absolute -left-20 top-32 h-72 w-72 rounded-full bg-blush-deep/40 blur-3xl animate-float" />
-      <div className="pointer-events-none absolute -right-10 top-60 h-96 w-96 rounded-full bg-lavender/40 blur-3xl animate-pulse-glow" />
+    <section className="relative overflow-hidden bg-gradient-hero pb-24 pt-32 md:pb-32 md:pt-40">
+      <div className="pointer-events-none absolute -left-32 top-24 h-80 w-80 rounded-full bg-blush-deep/40 blur-3xl animate-float" />
+      <div className="pointer-events-none absolute -right-20 top-72 h-96 w-96 rounded-full bg-lavender/40 blur-3xl animate-pulse-glow" />
 
-      <div className="relative mx-auto max-w-5xl px-6 text-center">
-        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground backdrop-blur">
-          <Sparkles className="h-3 w-3 text-lavender-deep" /> For two, on purpose
-        </span>
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 md:grid-cols-[1.1fr_1fr] md:gap-16">
+        <div className="text-center md:text-left">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground backdrop-blur">
+            <Sparkles className="h-3 w-3 text-lavender-deep" /> For two, on purpose
+          </span>
 
-        <h1 className="mt-8 font-display text-5xl font-semibold leading-[1.05] tracking-tight text-foreground md:text-7xl lg:text-8xl">
-          Earn your<br />
-          <span className="bg-gradient-primary bg-clip-text text-transparent">time together.</span>
-        </h1>
+          <h1 className="mt-7 font-display text-5xl font-semibold leading-[1.05] tracking-tight text-foreground md:text-6xl lg:text-7xl">
+            Earn your<br />
+            <span className="bg-gradient-primary bg-clip-text text-transparent">time together.</span>
+          </h1>
 
-        <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-          TwoGether is a quiet productivity space for two committed people.
-          Show up for your own day, watch each other do the same, and unlock
-          intentional time together when you both have.
-        </p>
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground md:mx-0">
+            A quiet productivity space for two committed people. Show up for your own day,
+            watch each other do the same, unlock intentional time together when you both have.
+          </p>
 
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link
-            to="/auth"
-            className="rounded-full bg-gradient-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02]"
-          >
-            Start your partnership
-          </Link>
-          <a
-            href="#how"
-            className="rounded-full border border-border bg-card/70 px-7 py-3.5 text-sm font-semibold text-foreground backdrop-blur transition hover:bg-card"
-          >
-            See how it works
-          </a>
+          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row md:items-start md:justify-start">
+            <Link
+              to="/auth"
+              className="group inline-flex cursor-pointer items-center gap-2 rounded-full bg-gradient-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-glow transition hover:scale-[1.02]"
+            >
+              Start your partnership
+              <Sparkles className="h-4 w-4 transition group-hover:rotate-12" />
+            </Link>
+            <a
+              href="#how"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-5 py-3.5 text-sm font-semibold text-foreground/80 transition hover:text-foreground"
+            >
+              See how it works →
+            </a>
+          </div>
+
+          <p className="mt-5 text-xs text-muted-foreground">Two accounts. One partnership. No third party.</p>
         </div>
 
-        <p className="mt-6 text-xs text-muted-foreground">
-          Two accounts. One partnership. No third party.
-        </p>
-
-        {/* Status preview card */}
-        <div className="mx-auto mt-20 max-w-3xl">
+        <div className="relative">
           <StatusPreview />
         </div>
       </div>
@@ -91,15 +89,15 @@ function Hero() {
 
 function StatusPreview() {
   return (
-    <div className="rounded-3xl border border-border bg-card/80 p-6 text-left shadow-glow backdrop-blur md:p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="rounded-3xl border border-border bg-card/85 p-5 text-left shadow-glow backdrop-blur md:p-6">
+      <div className="mb-5 flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Monday, today</span>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-          <Unlock className="h-3 w-3" /> Ready for engagement
+          <Unlock className="h-3 w-3" /> Gate open
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-3">
         <PartnerCard name="Alex" pct={100} tasks={[
           { label: "Morning run", done: true },
           { label: "Deep work block", done: true },
