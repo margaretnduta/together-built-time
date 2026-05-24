@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles, Repeat, Trash2, Pencil } from "lucide-react";
+import { Check, Circle, Plus, X, Loader2, Copy, Unlock, Lock, Sparkles, Repeat, Trash2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { StreakBar } from "@/components/streak-bar";
 import { CoupleAchievements } from "@/components/couple-achievements";
@@ -287,6 +287,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
   );
 
   const [viewedDate, setViewedDate] = useState<string>(today);
+  const [weekOffset, setWeekOffset] = useState( 0 );
   const isToday = viewedDate === today;
   const isPast = viewedDate < today;
 
@@ -447,17 +448,28 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
 
   const combinedPct = Math.round((myPct + partnerPct) / 2);
 
-  // Build a 14-day strip anchored on TODAY's Monday: this week + next week.
+  // Build a 7-day strip for the selected week (offset by weekOffset from current week)
   const weekDays = useMemo(() => {
     const d = new Date(today + "T00:00:00");
     const day = d.getDay(); // 0=Sun..6=Sat
     const mondayOffset = day === 0 ? -6 : 1 - day;
-    const monday = new Date(d); monday.setDate(d.getDate() + mondayOffset);
-    return Array.from({ length: 14 }, (_, i) => {
-      const dd = new Date(monday); dd.setDate(monday.getDate() + i);
+    const currentMonday = new Date(d); currentMonday.setDate(d.getDate() + mondayOffset);
+    const selectedMonday = new Date(currentMonday);
+    selectedMonday.setDate(currentMonday.getDate() + weekOffset * 7);
+    return Array.from({ length: 7 }, (_, i) => {
+      const dd = new Date(selectedMonday); dd.setDate(selectedMonday.getDate() + i);
       return dd.toISOString().slice(0, 10);
     });
-  }, [today]);
+  }, [today, weekOffset]);
+
+  // Week range label like "Mon, May 19 – Sun, May 25"
+  const weekRangeLabel = useMemo(() => {
+    if (weekDays.length === 0) return "";
+    const start = new Date(weekDays[0] + "T00:00:00");
+    const end = new Date(weekDays[6] + "T00:00:00");
+    const fmt = (date: Date) => date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return `${fmt(start)} – ${fmt(end)}`;
+  }, [weekDays]);
 
   return (
     <div>
@@ -480,58 +492,70 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
         )}
       </div>
 
-      {/* Two-week navigator: this week + next week, with a clear divider */}
-      <div className="mb-8 space-y-2">
-        <div className="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          <span>This week</span>
-          <span>Next week</span>
+      {/* Week navigator: Mon-Sun with prev/next controls */}
+      <div className="mb-8 space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <button
+            type="button"
+            onClick={() => setWeekOffset((o) => o - 1)}
+            className="flex cursor-pointer items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-soft transition hover:text-foreground"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" /> Prev
+          </button>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            {weekRangeLabel}
+          </p>
+          <button
+            type="button"
+            onClick={() => setWeekOffset((o) => o + 1)}
+            className="flex cursor-pointer items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-soft transition hover:text-foreground"
+          >
+            Next <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
         <div className="overflow-x-auto no-scrollbar">
-          <div className="inline-flex items-stretch gap-1.5 rounded-2xl border border-border bg-card p-1.5 shadow-soft">
-            {weekDays.map((iso, idx) => {
+          <div className="flex items-stretch justify-between gap-1.5 rounded-2xl border border-border bg-card p-1.5 shadow-soft">
+            {weekDays.map((iso) => {
               const d = new Date(iso + "T00:00:00");
               const labels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
               const active = iso === viewedDate;
               const isTodayPill = iso === today;
               const isFuture = iso > today;
-              const showDivider = idx === 7;
               return (
-                <div key={iso} className="flex items-stretch gap-1.5">
-                  {showDivider && <div aria-hidden className="mx-1 w-px self-stretch bg-border" />}
-                  <button
-                    type="button"
-                    onClick={() => setViewedDate(iso)}
-                    aria-pressed={active}
-                    aria-label={`View ${d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}${isTodayPill ? " (today)" : ""}`}
-                    className={`group relative flex min-w-[3.5rem] cursor-pointer flex-col items-center rounded-xl px-3 py-2 text-[11px] font-medium transition active:scale-95 ${
-                      active
-                        ? "bg-gradient-primary text-primary-foreground shadow-soft"
-                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                    }`}
-                  >
-                    <span className="uppercase tracking-wider">{labels[d.getDay()]}</span>
-                    <span className={`mt-0.5 font-display text-lg leading-none ${isTodayPill && !active ? "text-lavender-deep" : ""}`}>
-                      {d.getDate()}
-                    </span>
-                    {isTodayPill && !active && (
-                      <span aria-hidden className="mt-1 h-1 w-1 rounded-full bg-lavender-deep" />
-                    )}
-                    {isFuture && !active && (
-                      <span aria-hidden className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary/40" />
-                    )}
-                  </button>
-                </div>
+                <button
+                  key={iso}
+                  type="button"
+                  onClick={() => setViewedDate(iso)}
+                  aria-pressed={active}
+                  aria-label={`View ${d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}${isTodayPill ? " (today)" : ""}`}
+                  className={`group relative flex flex-1 cursor-pointer flex-col items-center rounded-xl px-2 py-2 text-[11px] font-medium transition active:scale-95 ${
+                    active
+                      ? "bg-gradient-primary text-primary-foreground shadow-soft"
+                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                  }`}
+                >
+                  <span className="uppercase tracking-wider">{labels[d.getDay()]}</span>
+                  <span className={`mt-0.5 font-display text-lg leading-none ${isTodayPill && !active ? "text-lavender-deep" : ""}`}>
+                    {d.getDate()}
+                  </span>
+                  {isTodayPill && !active && (
+                    <span aria-hidden className="mt-1 h-1 w-1 rounded-full bg-lavender-deep" />
+                  )}
+                  {isFuture && !active && (
+                    <span aria-hidden className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary/40" />
+                  )}
+                </button>
               );
             })}
           </div>
         </div>
-        {!isToday && (
+        {weekOffset !== 0 && (
           <button
             type="button"
-            onClick={() => setViewedDate(today)}
+            onClick={() => { setWeekOffset(0); setViewedDate(today); }}
             className="cursor-pointer text-xs font-medium text-lavender-deep hover:underline"
           >
-            ← Back to today
+            ← Back to this week
           </button>
         )}
       </div>
