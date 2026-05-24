@@ -287,6 +287,7 @@ function Dashboard({ user, partnership }: { user: { id: string }; partnership: P
   );
 
   const [viewedDate, setViewedDate] = useState<string>(today);
+  const [weekOffset, setWeekOffset] = useState( 0 );
   const isToday = viewedDate === today;
   const isPast = viewedDate < today;
 
