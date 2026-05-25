@@ -128,7 +128,7 @@ type PersonalGoal = {
   sort_order: number;
 };
 
-type Mode = "together" | "mine";
+type Mode = "together" | "mine" | "challenges";
 
 function GoalsView({ user, partnership }: { user: { id: string }; partnership: Partnership }) {
   const [month, setMonth] = useState(monthISO());
@@ -145,6 +145,8 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
     });
   }, [partnerId]);
 
+  const showMonthNav = mode !== "challenges";
+
   return (
     <div>
       <StreakBar userId={user.id} partnershipId={partnership.id} />
@@ -152,21 +154,25 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            {mode === "together" ? "Monthly couple goals" : "Your private goals"}
+            {mode === "together" ? "Monthly couple goals" : mode === "mine" ? "Your private goals" : "Streak challenges"}
           </p>
-          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">{monthLabel(month)}</h1>
+          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight">
+            {showMonthNav ? monthLabel(month) : "Challenges"}
+          </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setMonth(shiftMonth(month, -1))} className="rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:bg-secondary">← Prev</button>
-          {!isCurrent && (
-            <button onClick={() => setMonth(monthISO())} className="rounded-full bg-secondary px-3 py-1.5 text-sm transition hover:bg-accent">This month</button>
-          )}
-          <button onClick={() => setMonth(shiftMonth(month, 1))} className="rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:bg-secondary">Next →</button>
-        </div>
+        {showMonthNav && (
+          <div className="flex items-center gap-2">
+            <button onClick={() => setMonth(shiftMonth(month, -1))} className="rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:bg-secondary">← Prev</button>
+            {!isCurrent && (
+              <button onClick={() => setMonth(monthISO())} className="rounded-full bg-secondary px-3 py-1.5 text-sm transition hover:bg-accent">This month</button>
+            )}
+            <button onClick={() => setMonth(shiftMonth(month, 1))} className="rounded-full border border-border bg-card px-3 py-1.5 text-sm transition hover:bg-secondary">Next →</button>
+          </div>
+        )}
       </div>
 
       {/* Mode tabs */}
-      <div className="mb-8 inline-flex rounded-full border border-border bg-card p-1 shadow-soft">
+      <div className="mb-8 inline-flex flex-wrap rounded-full border border-border bg-card p-1 shadow-soft">
         <button
           onClick={() => setMode("together")}
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
@@ -183,12 +189,27 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
         >
           <Lock className="h-4 w-4" /> Just me
         </button>
+        <button
+          onClick={() => setMode("challenges")}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+            mode === "challenges" ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Flame className="h-4 w-4" /> Challenges
+        </button>
       </div>
 
       {mode === "together" ? (
         <CouplePanel user={user} partnership={partnership} month={month} />
-      ) : (
+      ) : mode === "mine" ? (
         <PersonalPanel user={user} month={month} />
+      ) : (
+        <ChallengesPanel
+          user={user}
+          partnershipId={partnership.id}
+          partnerId={partnerId}
+          partnerName={partnerName}
+        />
       )}
     </div>
   );
