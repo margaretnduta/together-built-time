@@ -83,6 +83,83 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_check_ins: {
+        Row: {
+          challenge_id: string
+          check_in_date: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          check_in_date: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          check_in_date?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_check_ins_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          is_solo: boolean
+          owner_id: string
+          partner_id: string | null
+          partnership_id: string | null
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          is_solo?: boolean
+          owner_id: string
+          partner_id?: string | null
+          partnership_id?: string | null
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_solo?: boolean
+          owner_id?: string
+          partner_id?: string | null
+          partnership_id?: string | null
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       couple_goals: {
         Row: {
           approval_status: string
@@ -489,6 +566,10 @@ export type Database = {
       accept_invite: { Args: { _code: string }; Returns: string }
       delete_my_account_data: { Args: never; Returns: undefined }
       dissolve_partnership: { Args: never; Returns: string }
+      get_challenge_streak: {
+        Args: { _challenge_id: string; _user_id: string }
+        Returns: number
+      }
       get_daily_streak: { Args: { _partnership_id: string }; Returns: number }
       get_monthly_couple_streak: {
         Args: { _partnership_id: string }

@@ -235,6 +235,133 @@ function ReflectionsView({ user, partnership }: { user: { id: string }; partners
           />
         </div>
       )}
+
+      <PreviousReflections
+        userId={user.id}
+        partnershipId={partnership.id}
+        currentWeek={week}
+        onJump={(iso) => setWeek(iso)}
+        myName={myName}
+        partnerName={partnerName}
+        partnerId={partnerId}
+      />
+    </div>
+  );
+}
+
+function PreviousReflections({
+  userId, partnershipId, currentWeek, onJump, myName, partnerName, partnerId,
+}: {
+  userId: string;
+  partnershipId: string;
+  currentWeek: string;
+  onJump: (iso: string) => void;
+  myName: string;
+  partnerName: string;
+  partnerId: string;
+}) {
+  const [items, setItems] = useState<Reflection[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("weekly_reflections")
+      .select("*")
+      .eq("partnership_id", partnershipId)
+      .not("submitted_at", "is", null)
+      .lt("week_start", currentWeek)
+      .order("week_start", { ascending: false })
+      .limit(40);
+    setItems((data as Reflection[]) ?? []);
+    setLoading(false);
+  }, [partnershipId, currentWeek]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`reflections-history-${partnershipId}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "weekly_reflections", filter: `partnership_id=eq.${partnershipId}` },
+        () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [partnershipId, load]);
+
+  // Group by week_start so each row pairs my + partner's reflection.
+  const grouped = useMemo(() => {
+    const map = new Map<string, { mine?: Reflection; partner?: Reflection }>();
+    for (const r of items) {
+      const entry = map.get(r.week_start) ?? {};
+      if (r.owner_id === userId) entry.mine = r;
+      else if (r.owner_id === partnerId) entry.partner = r;
+      map.set(r.week_start, entry);
+    }
+    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [items, userId, partnerId]);
+
+  return (
+    <section className="mt-12 rounded-3xl border border-border bg-card p-6 shadow-soft">
+      <div className="mb-4 flex items-center gap-2">
+        <BookOpen className="h-4 w-4 text-lavender-deep" />
+        <h3 className="font-display text-lg font-semibold">Previous reflections</h3>
+      </div>
+      <p className="mb-4 text-sm text-muted-foreground">Browse what you've shared over time.</p>
+
+      {loading ? (
+        <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-lavender-deep" /></div>
+      ) : grouped.length === 0 ? (
+        <p className="rounded-2xl bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
+          No past reflections yet. They'll show up here once you submit your first one.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {grouped.map(([wk, { mine, partner }]) => (
+            <li key={wk}>
+              <details className="rounded-2xl border border-border bg-background">
+                <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-sm">
+                  <div>
+                    <p className="font-display text-base font-semibold">{weekLabel(wk)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {mine ? `${myName} ✓` : `${myName} —`} · {partner ? `${partnerName} ✓` : `${partnerName} —`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); onJump(wk); }}
+                    className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium hover:bg-secondary"
+                  >
+                    Open week
+                  </button>
+                </summary>
+                <div className="space-y-3 border-t border-border p-4">
+                  <PreviousReflectionPreview label={myName} reflection={mine} />
+                  <PreviousReflectionPreview label={partnerName} reflection={partner} />
+                </div>
+              </details>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function PreviousReflectionPreview({ label, reflection }: { label: string; reflection: Reflection | undefined }) {
+  if (!reflection) {
+    return (
+      <div className="rounded-xl bg-secondary/30 p-3 text-xs italic text-muted-foreground">
+        {label} did not submit this week.
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl bg-secondary/30 p-3 text-sm">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      {reflection.went_well && <p><span className="font-medium">Went well:</span> {reflection.went_well}</p>}
+      {reflection.was_hard && <p className="mt-1"><span className="font-medium">Was hard:</span> {reflection.was_hard}</p>}
+      {reflection.appreciation_for_partner && <p className="mt-1"><span className="font-medium">Appreciation:</span> {reflection.appreciation_for_partner}</p>}
     </div>
   );
 }
