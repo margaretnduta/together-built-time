@@ -114,12 +114,7 @@ function ReflectionsPage() {
             </Link>
           </div>
         ) : (
-          <>
-            <StreakBar userId={user.id} partnershipId={partnership.id} />
-            <ReflectionsView user={user} partnership={partnership} />
-          </>
-        )}
-      </div>
+          <ReflectionsView user={user} partnership={partnership} />
     </main>
   );
 }
