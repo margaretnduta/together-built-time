@@ -232,6 +232,12 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
     const { error } = await supabase.from("important_dates").update({ deliverables: next } as never).eq("id", it.id);
     if (error) toast.error(error.message);
   }
+  async function toggleDone(it: ImportantDate) {
+    const { error } = await supabase.from("important_dates")
+      .update({ is_done: !it.is_done } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
+    else if (!it.is_done) toast.success("Marked as lived 💞");
+  }
 
   return (
     <div>
