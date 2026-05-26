@@ -105,6 +105,8 @@ function DatesPage() {
           </div>
         ) : (
           <DatesView user={user} partnership={partnership} />
+        )}
+      </div>
     </main>
   );
 }
