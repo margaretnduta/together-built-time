@@ -227,6 +227,7 @@ function AddChallengeForm({
 }
 
 function ChallengeCard({ challenge, user, partnerName }: { challenge: Challenge; user: { id: string }; partnerName: string }) {
+  const [editing, setEditing] = useState(false);
   const today = todayISO();
   const isOwner = challenge.owner_id === user.id;
   const isPartnerInvitee = challenge.partner_id === user.id;
