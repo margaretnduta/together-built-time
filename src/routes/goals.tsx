@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Check, Plus, X, Loader2, Target, Sparkles, CalendarDays, Users, Lock, Pencil, Flame } from "lucide-react";
 import { toast } from "sonner";
-import { StreakBar } from "@/components/streak-bar";
+
 import { CelebrationInbox } from "@/components/celebration-inbox";
 import { ReasonButton } from "@/components/reason-button";
 import { ChallengesPanel } from "@/components/challenges-panel";
