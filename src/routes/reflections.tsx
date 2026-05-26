@@ -115,6 +115,8 @@ function ReflectionsPage() {
           </div>
         ) : (
           <ReflectionsView user={user} partnership={partnership} />
+        )}
+      </div>
     </main>
   );
 }
