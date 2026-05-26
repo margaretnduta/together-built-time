@@ -350,11 +350,22 @@ function ChallengeCard({ challenge, user, partnerName }: { challenge: Challenge;
           </p>
         </div>
         {isOwner && (
-          <button onClick={remove} aria-label="Delete challenge" className="text-muted-foreground hover:text-destructive">
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setEditing((v) => !v)} aria-label="Edit challenge" className="text-muted-foreground hover:text-foreground">
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button onClick={remove} aria-label="Delete challenge" className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
+
+      {editing && isOwner && (
+        <EditChallengeForm challenge={challenge} onDone={() => setEditing(false)} />
+      )}
+      {!editing && (<>
+
 
       {/* Progress bar */}
       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
