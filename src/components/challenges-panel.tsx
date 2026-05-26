@@ -399,6 +399,7 @@ function ChallengeCard({ challenge, user, partnerName }: { challenge: Challenge;
           )}
         </div>
       )}
+      </>)}
     </li>
   );
 }
