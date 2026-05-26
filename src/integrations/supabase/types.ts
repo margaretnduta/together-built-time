@@ -296,9 +296,12 @@ export type Database = {
           decline_reason: string | null
           declined_by: string | null
           deliverables: string[]
+          done_at: string | null
+          done_by: string | null
           dress_code: string | null
           event_time: string | null
           id: string
+          is_done: boolean
           notes: string | null
           partnership_id: string
           proposed_by: string | null
@@ -319,9 +322,12 @@ export type Database = {
           decline_reason?: string | null
           declined_by?: string | null
           deliverables?: string[]
+          done_at?: string | null
+          done_by?: string | null
           dress_code?: string | null
           event_time?: string | null
           id?: string
+          is_done?: boolean
           notes?: string | null
           partnership_id: string
           proposed_by?: string | null
@@ -342,9 +348,12 @@ export type Database = {
           decline_reason?: string | null
           declined_by?: string | null
           deliverables?: string[]
+          done_at?: string | null
+          done_by?: string | null
           dress_code?: string | null
           event_time?: string | null
           id?: string
+          is_done?: boolean
           notes?: string | null
           partnership_id?: string
           proposed_by?: string | null
