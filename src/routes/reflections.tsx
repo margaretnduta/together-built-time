@@ -391,11 +391,13 @@ function MyReflectionCard({
   const submitted = !!reflection?.submitted_at;
   const canSubmit = wentWell.trim() || wasHard.trim() || appreciation.trim();
 
-  // Saturday gate (locally): allow writing only on Saturdays, for the current week.
+  // Past weeks: always writable. Current week: only on Saturday. Future: never.
   const today = new Date();
   const isSaturday = today.getDay() === 6;
-  const isCurrentWeek = week === weekISO();
-  const writeAllowed = isSaturday && isCurrentWeek;
+  const currentWeek = weekISO();
+  const isCurrentWeek = week === currentWeek;
+  const isFutureWeek = week > currentWeek;
+  const writeAllowed = isFutureWeek ? false : (isCurrentWeek ? isSaturday : true);
   const locked = !writeAllowed && !submitted;
   const inputsDisabled = (submitted && !editing) || locked;
 
