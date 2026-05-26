@@ -462,11 +462,15 @@ function MyReflectionCard({
 
       {locked && (
         <div className="mb-4 rounded-2xl border border-dashed border-border bg-secondary/40 p-4 text-sm">
-          <p className="font-semibold">Reflections open on Saturdays.</p>
+          <p className="font-semibold">
+            {isFutureWeek ? "This week hasn't happened yet." : "Reflections open on Saturdays."}
+          </p>
           <p className="mt-1 text-muted-foreground">
-            {isCurrentWeek
-              ? "Come back this Saturday to write your weekly reflection."
-              : "You can only write reflections during the current week, on Saturday."}
+            {isFutureWeek
+              ? "Come back once the week begins."
+              : isCurrentWeek
+                ? "Come back this Saturday to write your weekly reflection. Past weeks remain editable."
+                : "Past weeks are always editable — refresh the page if this message persists."}
           </p>
         </div>
       )}
