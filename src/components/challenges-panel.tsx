@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Flame, Plus, Trophy, Check, X, Trash2, Loader2, Calendar, User, Users } from "lucide-react";
+import { Flame, Plus, Trophy, Check, X, Trash2, Loader2, Calendar, User, Users, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 type Challenge = {
