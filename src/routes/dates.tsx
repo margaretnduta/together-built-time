@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Sparkles, CalendarHeart, Cake, Repeat, Star, X, Plus, CalendarIcon, Shirt, Clock, Pencil, Check, Ban, ListChecks } from "lucide-react";
 import { toast } from "sonner";
-import { StreakBar } from "@/components/streak-bar";
+
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,9 @@ type ImportantDate = {
   cancellation_reason: string | null;
   cancelled_at: string | null;
   cancelled_by: string | null;
+  is_done: boolean;
+  done_at: string | null;
+  done_by: string | null;
 };
 
 function formatTime(t: string | null) {
@@ -104,10 +107,7 @@ function DatesPage() {
             </Link>
           </div>
         ) : (
-          <>
-            <StreakBar userId={user.id} partnershipId={partnership.id} />
-            <DatesView user={user} partnership={partnership} />
-          </>
+          <DatesView user={user} partnership={partnership} />
         )}
       </div>
     </main>
@@ -231,6 +231,12 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
     const next = parsed.map(serializeDeliverable);
     const { error } = await supabase.from("important_dates").update({ deliverables: next } as never).eq("id", it.id);
     if (error) toast.error(error.message);
+  }
+  async function toggleDone(it: ImportantDate) {
+    const { error } = await supabase.from("important_dates")
+      .update({ is_done: !it.is_done } as never).eq("id", it.id);
+    if (error) toast.error(error.message);
+    else if (!it.is_done) toast.success("Marked as lived 💞");
   }
 
   return (
@@ -384,6 +390,22 @@ function DatesView({ user, partnership }: { user: { id: string }; partnership: P
                   )}>
                     {countdownLabel(days)}
                   </span>
+                  {days <= 0 && (
+                    <label className={cn(
+                      "flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition",
+                      it.is_done
+                        ? "border-lavender-deep/40 bg-gradient-soft text-lavender-deep"
+                        : "border-border bg-card hover:bg-secondary"
+                    )}>
+                      <input
+                        type="checkbox"
+                        checked={it.is_done}
+                        onChange={() => toggleDone(it)}
+                        className="h-3.5 w-3.5 accent-[color:var(--lavender-deep)]"
+                      />
+                      {it.is_done ? "Lived ✓" : "Mark as done"}
+                    </label>
+                  )}
                   <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                     <EditDateButton it={it} />
                     <ReasonButton label="Cancel" icon={<Ban className="h-3.5 w-3.5" />} placeholder="Reason for cancelling (optional)" onSubmit={(r) => cancel(it, r)} compact />

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Flame, Plus, Trophy, Check, X, Trash2, Loader2, Calendar, User, Users } from "lucide-react";
+import { Flame, Plus, Trophy, Check, X, Trash2, Loader2, Calendar, User, Users, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 type Challenge = {
@@ -227,6 +227,7 @@ function AddChallengeForm({
 }
 
 function ChallengeCard({ challenge, user, partnerName }: { challenge: Challenge; user: { id: string }; partnerName: string }) {
+  const [editing, setEditing] = useState(false);
   const today = todayISO();
   const isOwner = challenge.owner_id === user.id;
   const isPartnerInvitee = challenge.partner_id === user.id;
@@ -349,11 +350,22 @@ function ChallengeCard({ challenge, user, partnerName }: { challenge: Challenge;
           </p>
         </div>
         {isOwner && (
-          <button onClick={remove} aria-label="Delete challenge" className="text-muted-foreground hover:text-destructive">
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setEditing((v) => !v)} aria-label="Edit challenge" className="text-muted-foreground hover:text-foreground">
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button onClick={remove} aria-label="Delete challenge" className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
+
+      {editing && isOwner && (
+        <EditChallengeForm challenge={challenge} onDone={() => setEditing(false)} />
+      )}
+      {!editing && (<>
+
 
       {/* Progress bar */}
       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
@@ -387,6 +399,7 @@ function ChallengeCard({ challenge, user, partnerName }: { challenge: Challenge;
           )}
         </div>
       )}
+      </>)}
     </li>
   );
 }

@@ -326,7 +326,12 @@ function DaySection({ title, items, emptyText }: { title: string; items: { id: s
               ) : (
                 <Circle className="h-5 w-5 text-muted-foreground" />
               )}
-              <span className={`flex-1 text-sm ${it.done ? "text-muted-foreground line-through" : ""}`}>{it.title}</span>
+              <span
+                className={`flex-1 text-sm blur-sm select-none transition hover:blur-none focus:blur-none ${it.done ? "text-muted-foreground line-through" : ""}`}
+                title="Hover to reveal"
+              >
+                {it.title}
+              </span>
             </li>
           ))}
         </ul>

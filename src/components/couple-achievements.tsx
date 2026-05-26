@@ -29,7 +29,7 @@ export function CoupleAchievements({ userId, partnershipId, formedAt }: Props) {
         .select("id", { count: "exact", head: true })
         .eq("partnership_id", partnershipId)
         .eq("approval_status", "accepted")
-        .lte("date", todayISO),
+        .eq("is_done", true),
       supabase
         .from("couple_goals")
         .select("id", { count: "exact", head: true })
@@ -42,7 +42,7 @@ export function CoupleAchievements({ userId, partnershipId, formedAt }: Props) {
     setGoalsDone(goalsRes.count ?? 0);
     setDailyStreak((streakRes.data as number) ?? 0);
     setLoaded(true);
-  }, [partnershipId, todayISO]);
+  }, [partnershipId]);
 
   useEffect(() => { load(); }, [load]);
 
