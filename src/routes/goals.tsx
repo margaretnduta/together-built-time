@@ -149,7 +149,7 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
 
   return (
     <div>
-      <StreakBar userId={user.id} partnershipId={partnership.id} />
+      
       <CelebrationInbox userId={user.id} partnershipId={partnership.id} partnerName={partnerName} />
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
