@@ -39,6 +39,9 @@ type ImportantDate = {
   cancellation_reason: string | null;
   cancelled_at: string | null;
   cancelled_by: string | null;
+  is_done: boolean;
+  done_at: string | null;
+  done_by: string | null;
 };
 
 function formatTime(t: string | null) {
