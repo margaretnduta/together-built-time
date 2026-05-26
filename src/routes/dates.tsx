@@ -104,12 +104,7 @@ function DatesPage() {
             </Link>
           </div>
         ) : (
-          <>
-            <StreakBar userId={user.id} partnershipId={partnership.id} />
-            <DatesView user={user} partnership={partnership} />
-          </>
-        )}
-      </div>
+          <DatesView user={user} partnership={partnership} />
     </main>
   );
 }
