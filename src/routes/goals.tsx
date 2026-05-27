@@ -172,32 +172,33 @@ function GoalsView({ user, partnership }: { user: { id: string }; partnership: P
       </div>
 
       {/* Mode tabs */}
-      <div className="mb-8 inline-flex flex-wrap rounded-full border border-border bg-card p-1 shadow-soft">
+      <div className="mb-8 grid w-full grid-cols-3 gap-1 rounded-full border border-border bg-card p-1 shadow-soft sm:inline-grid sm:w-auto">
         <button
           onClick={() => setMode("together")}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+          className={`flex items-center justify-center gap-1.5 rounded-full px-2.5 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
             mode === "together" ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Users className="h-4 w-4" /> Together
+          <Users className="h-4 w-4 shrink-0" /> <span className="truncate">Together</span>
         </button>
         <button
           onClick={() => setMode("mine")}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+          className={`flex items-center justify-center gap-1.5 rounded-full px-2.5 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
             mode === "mine" ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Lock className="h-4 w-4" /> Just me
+          <Lock className="h-4 w-4 shrink-0" /> <span className="truncate">Just me</span>
         </button>
         <button
           onClick={() => setMode("challenges")}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+          className={`flex items-center justify-center gap-1.5 rounded-full px-2.5 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
             mode === "challenges" ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Flame className="h-4 w-4" /> Challenges
+          <Flame className="h-4 w-4 shrink-0" /> <span className="truncate">Challenges</span>
         </button>
       </div>
+
 
       {mode === "together" ? (
         <CouplePanel user={user} partnership={partnership} month={month} />
