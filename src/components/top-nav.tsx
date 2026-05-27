@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, LogOut, Menu } from "lucide-react";
+import { CalendarHeart, ClipboardList, Heart, History, Home, LogOut, Menu, Target, UserRound } from "lucide-react";
 import { useState } from "react";
 import {
   Sheet,
