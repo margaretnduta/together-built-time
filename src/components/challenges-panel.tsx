@@ -438,3 +438,82 @@ function StreakStat({
     </div>
   );
 }
+
+function EditChallengeForm({ challenge, onClose }: { challenge: Challenge; onClose: () => void }) {
+  const [title, setTitle] = useState(challenge.title);
+  const [description, setDescription] = useState(challenge.description ?? "");
+  const [startDate, setStartDate] = useState(challenge.start_date);
+  const [endDate, setEndDate] = useState(challenge.end_date);
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    if (endDate < startDate) { toast.error("End date must be on or after start date."); return; }
+    setBusy(true);
+    const { error } = await supabase
+      .from("challenges")
+      .update({
+        title: title.trim(),
+        description: description.trim() || null,
+        start_date: startDate,
+        end_date: endDate,
+        updated_at: new Date().toISOString(),
+      } as never)
+      .eq("id", challenge.id);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Challenge updated");
+    onClose();
+  }
+
+  return (
+    <form onSubmit={save} className="mt-4 space-y-3 rounded-2xl border border-border bg-background/60 p-4">
+      <div>
+        <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Title</label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={120}
+          required
+          className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
+        />
+      </div>
+      <div>
+        <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={500}
+          rows={2}
+          className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm focus:border-ring focus:outline-none"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Start</label>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required
+            className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-ring focus:outline-none" />
+        </div>
+        <div>
+          <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">End</label>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required
+            className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-ring focus:outline-none" />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2">
+        <button type="button" onClick={onClose}
+          className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+          Cancel
+        </button>
+        <button type="submit" disabled={busy || !title.trim()}
+          className="flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60">
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />} Save changes
+        </button>
+      </div>
+    </form>
+  );
+}
+  );
+}
