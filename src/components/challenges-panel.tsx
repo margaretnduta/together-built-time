@@ -361,9 +361,7 @@ function ChallengeCard({ challenge, user, partnerName }: { challenge: Challenge;
         )}
       </div>
 
-      {editing && isOwner && (
-        <EditChallengeForm challenge={challenge} onDone={() => setEditing(false)} />
-      )}
+      {editing && isOwner && (<div className="mt-3 text-xs text-muted-foreground">Edit form coming next…</div>)}
       {!editing && (<>
 
 
