@@ -130,16 +130,25 @@ function ProfileCard({ userId }: { userId: string }) {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, display_name, phone, avatar_url")
-      .eq("id", userId)
-      .maybeSingle();
+    const [{ data, error }, { data: priv }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabase
+        .from("profile_private")
+        .select("phone")
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
     if (error) {
       toast.error("Could not load your profile.");
       return;
     }
-    const p = data as Profile | null;
+    const base = data as { id: string; display_name: string; avatar_url: string | null } | null;
+    const phoneVal = (priv as { phone: string | null } | null)?.phone ?? null;
+    const p: Profile | null = base ? { ...base, phone: phoneVal } : null;
     setProfile(p);
     setDisplayName(p?.display_name ?? "");
     setPhone(p?.phone ?? "");
@@ -160,22 +169,23 @@ function ProfileCard({ userId }: { userId: string }) {
     }
     setErrors({});
     setSaving(true);
-    // RLS restricts this UPDATE to the row where id = auth.uid().
     const { error } = await supabase
       .from("profiles")
-      .update({
-        display_name: result.data.display_name,
-        phone: result.data.phone ? result.data.phone : null,
-      })
+      .update({ display_name: result.data.display_name })
       .eq("id", userId);
+    const newPhone = result.data.phone ? result.data.phone : null;
+    const { error: phoneErr } = await supabase
+      .from("profile_private")
+      .upsert({ user_id: userId, phone: newPhone } as never, { onConflict: "user_id" });
     setSaving(false);
-    if (error) {
+    if (error || phoneErr) {
       toast.error("Could not save your profile. Please try again.");
       return;
     }
     toast.success("Profile updated.");
     load();
   }
+
 
   async function onAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
