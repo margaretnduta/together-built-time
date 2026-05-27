@@ -129,6 +129,11 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+  @media (max-width: 767px) {
+    body {
+      padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    }
+  }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
