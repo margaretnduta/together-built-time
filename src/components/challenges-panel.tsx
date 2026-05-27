@@ -515,5 +515,3 @@ function EditChallengeForm({ challenge, onClose }: { challenge: Challenge; onClo
     </form>
   );
 }
-  );
-}
