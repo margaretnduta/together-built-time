@@ -34,93 +34,97 @@ export function TopNav({ onSignOut }: TopNavProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="border-b border-border bg-card/60 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
-        <Link
-          to="/"
-          className="flex shrink-0 items-center gap-2 font-display text-base font-semibold sm:text-lg"
-          aria-label="TwoGether home"
-        >
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
-            <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
-          </div>
-          <span className="hidden sm:inline">TwoGether</span>
-        </Link>
-
-        {/* Desktop nav */}
-        <nav className="ml-2 hidden min-w-0 flex-1 items-center gap-1 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className={linkBase}
-              activeProps={{ className: linkActive }}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex-1 md:hidden" />
-
-        {/* Notifications bell - visible on all sizes */}
-        <NotificationsBell />
-
-        <button
-          onClick={onSignOut}
-          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground md:flex"
-          aria-label="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
-
-        {/* Mobile hamburger — now on the right */}
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <button
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground md:hidden"
-              aria-label="Open menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-72 p-0">
-            <SheetHeader className="border-b border-border p-6">
-              <SheetTitle className="flex items-center gap-2 font-display text-lg">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
-                  <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
-                </div>
-                TwoGether
-              </SheetTitle>
-            </SheetHeader>
-            <nav className="flex flex-col gap-1 p-4">
-              {links.map((l) => (
-                <SheetClose asChild key={l.to}>
-                  <Link
-                    to={l.to}
-                    className="rounded-xl px-4 py-3 text-base font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-                    activeProps={{ className: "rounded-xl px-4 py-3 text-base font-medium bg-gradient-primary text-primary-foreground shadow-soft" }}
-                  >
-                    {l.label}
-                  </Link>
-                </SheetClose>
-              ))}
-            </nav>
-            <div className="absolute inset-x-0 bottom-0 border-t border-border p-4">
-              <button
-                onClick={() => { setOpen(false); onSignOut(); }}
-                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-destructive"
-              >
-                <LogOut className="h-4 w-4" /> Sign out
-              </button>
+    <>
+      <header className="border-b border-border bg-card/60 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+          <Link
+            to="/"
+            className="flex shrink-0 items-center gap-2 font-display text-base font-semibold sm:text-lg"
+            aria-label="TwoGether home"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
+              <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
             </div>
-          </SheetContent>
-        </Sheet>
-      </div>
+            <span className="hidden sm:inline">TwoGether</span>
+          </Link>
 
-      {/* Mobile bottom navigation */}
+          {/* Desktop nav */}
+          <nav className="ml-2 hidden min-w-0 flex-1 items-center gap-1 md:flex">
+            {links.map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                className={linkBase}
+                activeProps={{ className: linkActive }}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex-1 md:hidden" />
+
+          {/* Notifications bell - visible on all sizes */}
+          <NotificationsBell />
+
+          <button
+            onClick={onSignOut}
+            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground md:flex"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+
+          {/* Mobile hamburger — now on the right */}
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <button
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground md:hidden"
+                aria-label="Open menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72 p-0">
+              <SheetHeader className="border-b border-border p-6">
+                <SheetTitle className="flex items-center gap-2 font-display text-lg">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary">
+                    <Heart className="h-3.5 w-3.5 text-primary-foreground" fill="currentColor" />
+                  </div>
+                  TwoGether
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-1 p-4">
+                {links.map((l) => (
+                  <SheetClose asChild key={l.to}>
+                    <Link
+                      to={l.to}
+                      className="rounded-xl px-4 py-3 text-base font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                      activeProps={{ className: "rounded-xl px-4 py-3 text-base font-medium bg-gradient-primary text-primary-foreground shadow-soft" }}
+                    >
+                      {l.label}
+                    </Link>
+                  </SheetClose>
+                ))}
+              </nav>
+              <div className="absolute inset-x-0 bottom-0 border-t border-border p-4">
+                <button
+                  onClick={() => { setOpen(false); onSignOut(); }}
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </header>
+
+      {/* Mobile bottom navigation — sibling of header so fixed positioning
+          anchors to the viewport (header's backdrop-blur would otherwise
+          create a containing block and trap it inside). */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary"
       >
@@ -142,9 +146,10 @@ export function TopNav({ onSignOut }: TopNavProps) {
           ))}
         </ul>
       </nav>
-    </header>
+    </>
   );
 }
+
 
 const bottomLinks = [
   { to: "/app", label: "Today", Icon: Home },
