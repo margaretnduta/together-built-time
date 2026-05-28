@@ -124,8 +124,11 @@ export function TopNav({ onSignOut }: TopNavProps) {
           anchors to the viewport (header's backdrop-blur would otherwise
           create a containing block and trap it inside). */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="fixed inset-x-0 bottom-0 z-[9999] border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transform-gpu md:hidden"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom)",
+          WebkitTransform: "translateZ(0)",
+        }}
         aria-label="Primary"
       >
         <ul className="mx-auto grid max-w-lg grid-cols-6">
